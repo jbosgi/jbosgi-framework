@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -100,7 +101,6 @@ import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
-import org.osgi.resource.Resource;
 import org.osgi.service.resolver.ResolutionException;
 
 /**
@@ -223,7 +223,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void stop(StopContext context) {
         XEnvironment env = injectedEnvironment.getValue();
-        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
+        Iterator<XResource> itres = env.getResources(null);
+        while (itres.hasNext()) {
+            XResource res = itres.next();
             if (res instanceof UserBundleRevision) {
                 UserBundleRevision userRev = (UserBundleRevision) res;
                 userRev.close();
@@ -378,8 +380,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public Set<XBundle> getBundles() {
         Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
-            XBundle bundle = ((XBundleRevision) aux).getBundle();
+        Iterator<XResource> itres = env.getResources(null);
+        while (itres.hasNext()) {
+            XResource res = itres.next();
+            XBundle bundle = ((XBundleRevision) res).getBundle();
             if (bundle.getState() != Bundle.UNINSTALLED)
                 result.add(bundle);
         }
@@ -390,8 +394,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public Set<XBundle> getBundles(Integer states) {
         Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
-            XBundle bundle = ((XBundleRevision) aux).getBundle();
+        Iterator<XResource> itres = env.getResources(null);
+        while (itres.hasNext()) {
+            XResource res = itres.next();
+            XBundle bundle = ((XBundleRevision) res).getBundle();
             if (states == null || (bundle.getState() & states.intValue()) != 0)
                 result.add(bundle);
         }

@@ -225,10 +225,11 @@ public final class ResolverImpl implements XResolver {
             }
         }
         HashSet<Resource> fragments = new HashSet<Resource>();
-        for (XResource res : environment.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
-            XBundleRevision brev = (XBundleRevision) res;
+        Iterator<XResource> itres = environment.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT));
+        while (itres.hasNext()) {
+            XBundleRevision brev = (XBundleRevision) itres.next();
             if (brev.getBundle().getState() != Bundle.UNINSTALLED) {
-                XRequirement xreq = (XRequirement) res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
+                XRequirement xreq = (XRequirement) brev.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
                 for (Capability cap : hostcaps) {
                     if (xreq.matches(cap) && !combined.contains(brev)) {
                         fragments.add(brev);

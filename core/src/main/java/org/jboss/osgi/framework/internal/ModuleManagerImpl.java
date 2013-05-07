@@ -30,6 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +71,7 @@ import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.resolver.XResourceRequirement;
+import org.jboss.osgi.resolver.XIdentityRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.namespace.PackageNamespace;
@@ -171,7 +172,9 @@ public final class ModuleManagerImpl implements ModuleManager {
 
     private XBundleRevision getBundleRevision(Module module) {
         XBundleRevision result = null;
-        for (XResource res : environment.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
+        Iterator<XResource> itres = environment.getResources(null);
+        while (itres.hasNext()) {
+            XResource res = itres.next();
             Module resmod = res.getAttachment(InternalConstants.MODULE_KEY);
             if (module == resmod) {
                 result = (XBundleRevision) res;
@@ -352,7 +355,7 @@ public final class ModuleManagerImpl implements ModuleManager {
             }
 
             // Dependency for Require-Bundle
-            if (req.adapt(XResourceRequirement.class) != null) {
+            if (req.adapt(XIdentityRequirement.class) != null) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -379,7 +382,7 @@ public final class ModuleManagerImpl implements ModuleManager {
                 continue;
 
             XRequirement xreq = (XRequirement) wire.getRequirement();
-            XResourceRequirement resreq = xreq.adapt(XResourceRequirement.class);
+            XIdentityRequirement resreq = xreq.adapt(XIdentityRequirement.class);
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(resreq.isOptional());
