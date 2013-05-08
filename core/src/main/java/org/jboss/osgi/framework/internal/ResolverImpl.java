@@ -90,16 +90,14 @@ public final class ResolverImpl implements XResolver {
     private final NativeCode nativeCode;
     private final ModuleManager moduleManager;
     private final FrameworkModuleLoader moduleLoader;
-    private final XEnvironment environment;
     private final LockManager lockManager;
     private final XResolver delegate;
 
-    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XEnvironment environment, LockManager lockManager) {
+    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, LockManager lockManager) {
         this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
         this.moduleLoader = moduleLoader;
-        this.environment = environment;
         this.lockManager = lockManager;
         XResolverFactory resolverFactory = XResolverFactoryLocator.getResolverFactory();
         this.delegate = resolverFactory.createResolver();
@@ -110,14 +108,14 @@ public final class ResolverImpl implements XResolver {
         Collection<Resource> manres = new HashSet<Resource>(mandatory != null ? mandatory : Collections.<Resource> emptySet());
         Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
         removeUninstalled(manres, optres);
-        appendOptionalFragments(manres, optres);
+        appendOptionalFragments(environment, manres, optres);
         appendOptionalHostBundles(manres, optres);
         return delegate.createResolveContext(environment, manres, optres);
     }
 
     @Override
     public synchronized Map<Resource, List<Wire>> resolve(ResolveContext resolveContext) throws ResolutionException {
-        return resolveInternal(resolveContext, false);
+        return resolveInternal((XResolveContext) resolveContext, false);
     }
 
     @Override
@@ -125,7 +123,7 @@ public final class ResolverImpl implements XResolver {
         return resolveInternal(resolveContext, true);
     }
 
-    private Map<Resource, List<Wire>> resolveInternal(ResolveContext resolveContext, boolean applyResults) throws ResolutionException {
+    private Map<Resource, List<Wire>> resolveInternal(XResolveContext resolveContext, boolean applyResults) throws ResolutionException {
 
         // Resolver Hooks also must not be allowed to start another resolve operation, for example by starting a bundle or resolving bundles.
         // The framework must detect this and throw an Illegal State Exception.
@@ -133,6 +131,7 @@ public final class ResolverImpl implements XResolver {
             throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
         BundleContext syscontext = bundleManager.getSystemContext();
+        XEnvironment environment = resolveContext.getEnvironment();
         Collection<Resource> manres = new HashSet<Resource>(resolveContext.getMandatoryResources());
         Collection<Resource> optres = new HashSet<Resource>(resolveContext.getOptionalResources());
         ResolverHookProcessor hookregs = new ResolverHookProcessor(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
@@ -176,14 +175,16 @@ public final class ResolverImpl implements XResolver {
                 lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
                 wiremap = delegate.resolve(resolveContext);
                 if (applyResults) {
-                    applyResolverResults(wiremap);
+                    applyResolverResults(environment, wiremap);
                 }
             } finally {
                 lockManager.unlockItems(lockContext);
             }
 
             // Send the {@link BundleEvent.RESOLVED} event outside the lock
-            sendBundleResolvedEvents(wiremap);
+            if (applyResults) {
+                sendBundleResolvedEvents(wiremap);
+            }
 
             return wiremap;
         } finally {
@@ -218,7 +219,7 @@ public final class ResolverImpl implements XResolver {
         }
     }
 
-    private void appendOptionalFragments(Collection<? extends Resource> manres, Collection<Resource> optres) {
+    private void appendOptionalFragments(XEnvironment environment, Collection<? extends Resource> manres, Collection<Resource> optres) {
         Collection<Capability> hostcaps = new HashSet<Capability>();
         HashSet<Resource> combined = getCombinedResources(manres, optres);
         for (Resource res : combined) {
@@ -285,7 +286,7 @@ public final class ResolverImpl implements XResolver {
         }
     }
 
-    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) throws ResolutionException {
+    private Map<Resource, Wiring> applyResolverResults(XEnvironment environment, Map<Resource, List<Wire>> wiremap) throws ResolutionException {
 
         // [TODO] Revisit how we apply the resolution results
         // An exception in one of the steps may leave the framework partially modified
@@ -399,12 +400,15 @@ public final class ResolverImpl implements XResolver {
 
     private void sendBundleResolvedEvents(Map<Resource, List<Wire>> wiremap) {
         for (Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            XBundleRevision brev = (XBundleRevision) entry.getKey();
-            Bundle bundle = brev.getBundle();
-            if (bundle instanceof AbstractBundleState) {
-                AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
-                if (bundleManager.isFrameworkCreated()) {
-                    bundleState.fireBundleEvent(BundleEvent.RESOLVED);
+            Resource res = entry.getKey();
+            if (res instanceof XBundleRevision) {
+                XBundleRevision brev = (XBundleRevision) res;
+                Bundle bundle = brev.getBundle();
+                if (bundle instanceof AbstractBundleState) {
+                    AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
+                    if (bundleManager.isFrameworkCreated()) {
+                        bundleState.fireBundleEvent(BundleEvent.RESOLVED);
+                    }
                 }
             }
         }

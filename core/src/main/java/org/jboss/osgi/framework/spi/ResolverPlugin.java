@@ -28,7 +28,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.ResolverImpl;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 
 /**
@@ -43,7 +42,6 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
     private final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
     private final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
-    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     public ResolverPlugin() {
@@ -53,7 +51,6 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
     @Override
     protected void addServiceDependencies(ServiceBuilder<XResolver> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, injectedNativeCode);
         builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class, injectedModuleLoader);
@@ -67,8 +64,7 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
         NativeCode nativeCode = injectedNativeCode.getValue();
         ModuleManager moduleManager = injectedModuleManager.getValue();
         FrameworkModuleLoader moduleLoader = injectedModuleLoader.getValue();
-        XEnvironment env = injectedEnvironment.getValue();
         LockManager lockManager = injectedLockManager.getValue();
-        return new ResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, env, lockManager);
+        return new ResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, lockManager);
     }
 }
