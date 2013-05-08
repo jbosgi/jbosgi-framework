@@ -30,8 +30,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.BundleLifecycleImpl;
-import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResolver;
 
 /**
  * An integration point for the bundle lifecycle.
@@ -42,8 +40,6 @@ import org.jboss.osgi.resolver.XResolver;
 public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLifecycle> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     public BundleLifecyclePlugin() {
@@ -54,8 +50,6 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
     protected void addServiceDependencies(ServiceBuilder<BundleLifecycle> builder) {
         builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
@@ -63,9 +57,6 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
     @Override
     protected BundleLifecycle createServiceValue(StartContext startContext) throws StartException {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        XResolver resolver = injectedResolver.getValue();
-        XEnvironment environment = injectedEnvironment.getValue();
-        LockManager lockManager = injectedLockManager.getValue();
         return new BundleLifecycleImpl(bundleManager);
     }
 }
