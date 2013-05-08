@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.spi;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -28,7 +31,10 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * A noop placeholder for additional system services
@@ -39,6 +45,9 @@ import org.osgi.framework.BundleContext;
 public class SystemServicesPlugin extends AbstractIntegrationService<SystemServices> {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
+    private final Set<ServiceRegistration<?>> registrations = new HashSet<ServiceRegistration<?>>();
 
     public SystemServicesPlugin() {
         super(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
@@ -47,6 +56,8 @@ public class SystemServicesPlugin extends AbstractIntegrationService<SystemServi
     @Override
     protected void addServiceDependencies(ServiceBuilder<SystemServices> builder) {
         builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -67,16 +78,19 @@ public class SystemServicesPlugin extends AbstractIntegrationService<SystemServi
         getValue().unregisterServices();
     }
 
-    static class SystemServicesImpl implements SystemServices {
+    class SystemServicesImpl implements SystemServices {
 
         @Override
         public void registerServices(BundleContext context) {
-            // do nothing
+            registrations.add(context.registerService(XEnvironment.class, injectedEnvironment.getValue(), null));
+            registrations.add(context.registerService(XResolver.class, injectedResolver.getValue(), null));
         }
 
         @Override
         public void unregisterServices() {
-            // do nothing
+            for (ServiceRegistration<?> sreg : registrations) {
+                sreg.unregister();
+            }
         }
     }
 }

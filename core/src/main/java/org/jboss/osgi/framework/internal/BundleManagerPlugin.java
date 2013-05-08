@@ -196,7 +196,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
 
         // Get and cache the BSNVERSION
-        uniquenessPolicy = UniquenessPolicy.valueOf((String)getProperty(Constants.FRAMEWORK_BSNVERSION));
+        uniquenessPolicy = UniquenessPolicy.valueOf((String) getProperty(Constants.FRAMEWORK_BSNVERSION));
 
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
@@ -383,9 +383,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         Iterator<XResource> itres = env.getResources(null);
         while (itres.hasNext()) {
             XResource res = itres.next();
-            XBundle bundle = ((XBundleRevision) res).getBundle();
-            if (bundle.getState() != Bundle.UNINSTALLED)
-                result.add(bundle);
+            if (res instanceof XBundleRevision) {
+                XBundle bundle = ((XBundleRevision) res).getBundle();
+                if (bundle.getState() != Bundle.UNINSTALLED)
+                    result.add(bundle);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -397,9 +399,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         Iterator<XResource> itres = env.getResources(null);
         while (itres.hasNext()) {
             XResource res = itres.next();
-            XBundle bundle = ((XBundleRevision) res).getBundle();
-            if (states == null || (bundle.getState() & states.intValue()) != 0)
-                result.add(bundle);
+            if (res instanceof XBundleRevision) {
+                XBundle bundle = ((XBundleRevision) res).getBundle();
+                if (states == null || (bundle.getState() & states.intValue()) != 0)
+                    result.add(bundle);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -407,8 +411,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public XBundle getBundleById(long bundleId) {
         XEnvironment env = injectedEnvironment.getValue();
-        XBundleRevision brev = (XBundleRevision) env.getResourceById(bundleId);
-        return brev != null ? brev.getBundle() : null;
+        XResource res = env.getResourceById(bundleId);
+        if (res instanceof XBundleRevision) {
+            return ((XBundleRevision) res).getBundle();
+        }
+        return null;
     }
 
     @Override
@@ -665,18 +672,18 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private LockableItem[] getLockableItems(LockManager lockManager, Method method, XBundle bundle) {
         LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
         LockableItem[] items = null;
-        switch(method) {
+        switch (method) {
             case RESOLVE:
             case UPDATE:
             case REFRESH:
             case UNINSTALL:
-                items = new LockableItem[] { wireLock, (LockableItem)bundle };
+                items = new LockableItem[] { wireLock, (LockableItem) bundle };
                 break;
             case START:
-                items = new LockableItem[] { bundle.isResolved() ? (LockableItem)bundle : wireLock, (LockableItem)bundle };
+                items = new LockableItem[] { bundle.isResolved() ? (LockableItem) bundle : wireLock, (LockableItem) bundle };
                 break;
             case STOP:
-                items = new LockableItem[] { (LockableItem)bundle };
+                items = new LockableItem[] { (LockableItem) bundle };
                 break;
         }
         return items;

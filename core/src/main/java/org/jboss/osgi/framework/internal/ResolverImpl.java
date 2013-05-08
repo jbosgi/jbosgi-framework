@@ -208,10 +208,12 @@ public final class ResolverImpl implements XResolver {
 
     private void removeUninstalled(Collection<Resource> manres, Collection<Resource> optres) {
         for (Resource res : getCombinedResources(manres, optres)) {
-            XBundleRevision brev = (XBundleRevision) res;
-            if (brev.getBundle().getState() == Bundle.UNINSTALLED) {
-                manres.remove(brev);
-                optres.remove(brev);
+            if (res instanceof XBundleRevision) {
+                XBundleRevision brev = (XBundleRevision) res;
+                if (brev.getBundle().getState() == Bundle.UNINSTALLED) {
+                    manres.remove(brev);
+                    optres.remove(brev);
+                }
             }
         }
     }
