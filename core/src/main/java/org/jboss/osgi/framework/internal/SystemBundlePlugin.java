@@ -125,13 +125,10 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
 
         // Initialize the OSGiMetaData
         OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
-        SystemPaths systemPackages = frameworkState.getSystemPathsPlugin();
-
-        List<String> exportedPackages = new ArrayList<String>();
-        exportedPackages.addAll(systemPackages.getSystemPackages());
+        SystemPaths systemPaths = frameworkState.getSystemPaths();
 
         // Construct framework capabilities from system packages
-        for (String packageSpec : exportedPackages) {
+        for (String packageSpec : systemPaths.getSystemPackages()) {
             builder.addExportPackages(packageSpec);
         }
 
@@ -192,6 +189,9 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
             }
             if (Java.isCompatible(Java.VERSION_1_6)) {
                 vlist += ",1.6";
+            }
+            if (Java.isCompatible(Java.VERSION_1_7)) {
+                vlist += ",1.7";
             }
             capspec += vlist.substring(1) + "\"";
             builder.addProvidedCapabilities(capspec);

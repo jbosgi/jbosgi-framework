@@ -140,7 +140,7 @@ final class FrameworkState {
         return injectedSystemBundle.getValue();
     }
 
-    SystemPaths getSystemPathsPlugin() {
+    SystemPaths getSystemPaths() {
         return injectedSystemPaths.getValue();
     }
 

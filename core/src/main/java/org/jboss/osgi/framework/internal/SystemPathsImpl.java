@@ -69,7 +69,7 @@ public final class SystemPathsImpl implements SystemPaths {
         // Initialize the framework packages
         frameworkPackages.addAll(Arrays.asList(SystemPaths.DEFAULT_FRAMEWORK_PACKAGES));
 
-        String systemPackagesProp = (String) frameworkBuilder.getProperty(FRAMEWORK_SYSTEMPACKAGES);
+        String systemPackagesProp = frameworkBuilder.getProperty(FRAMEWORK_SYSTEMPACKAGES);
         if (systemPackagesProp != null) {
             systemPackages.addAll(packagesAsList(systemPackagesProp));
         } else {
@@ -79,12 +79,12 @@ public final class SystemPathsImpl implements SystemPaths {
         }
 
         // Add the extra system packages
-        String extraPackages = (String) frameworkBuilder.getProperty(FRAMEWORK_SYSTEMPACKAGES_EXTRA);
+        String extraPackages = frameworkBuilder.getProperty(FRAMEWORK_SYSTEMPACKAGES_EXTRA);
         if (extraPackages != null)
             systemPackages.addAll(packagesAsList(extraPackages));
 
         // Initialize the boot delegation package names
-        String bootDelegationProp = (String) frameworkBuilder.getProperty(FRAMEWORK_BOOTDELEGATION);
+        String bootDelegationProp = frameworkBuilder.getProperty(FRAMEWORK_BOOTDELEGATION);
         if (bootDelegationProp != null) {
             String[] packageNames = bootDelegationProp.split(",");
             for (String packageName : packageNames) {
@@ -233,7 +233,7 @@ public final class SystemPathsImpl implements SystemPaths {
     }
 
     private boolean doFrameworkPackageDelegation() {
-        String property = (String) frameworkBuilder.getProperty(FRAMEWORK_BUNDLE_PARENT);
+        String property = frameworkBuilder.getProperty(FRAMEWORK_BUNDLE_PARENT);
         if (property == null) {
             property = FRAMEWORK_BUNDLE_PARENT_BOOT;
         }

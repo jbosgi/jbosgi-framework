@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.url.URLStreamHandlerService;
 
 /**
  * There can only ever be one URLStreamHandlerFactory active in the system and it can only be set once, using
@@ -43,17 +44,17 @@ import org.osgi.framework.ServiceReference;
 final class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory {
 
     private URLStreamHandlerFactory delegate;
-    private Map<String, List<ServiceReference<URLStreamHandler>>> streamHandlers = new HashMap<String, List<ServiceReference<URLStreamHandler>>>();
+    private Map<String, List<ServiceReference<URLStreamHandlerService>>> streamHandlers = new HashMap<String, List<ServiceReference<URLStreamHandlerService>>>();
 
     void setDelegateFactory(URLStreamHandlerFactory factory) {
         delegate = factory;
     }
 
-    void addHandler(String protocol, ServiceReference<URLStreamHandler> reference) {
+    void addHandler(String protocol, ServiceReference<URLStreamHandlerService> reference) {
         synchronized (streamHandlers) {
-            List<ServiceReference<URLStreamHandler>> list = streamHandlers.get(protocol);
+            List<ServiceReference<URLStreamHandlerService>> list = streamHandlers.get(protocol);
             if (list == null) {
-                list = new ArrayList<ServiceReference<URLStreamHandler>>();
+                list = new ArrayList<ServiceReference<URLStreamHandlerService>>();
                 streamHandlers.put(protocol, list);
             }
             list.add(reference);
@@ -61,16 +62,16 @@ final class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory 
         }
     }
 
-    List<ServiceReference<URLStreamHandler>> getStreamHandlers(String protocol) {
+    List<ServiceReference<URLStreamHandlerService>> getStreamHandlers(String protocol) {
         synchronized (streamHandlers) {
             return streamHandlers.get(protocol);
         }
     }
 
-    void removeHandler(ServiceReference<URLStreamHandler> reference) {
+    void removeHandler(ServiceReference<URLStreamHandlerService> reference) {
         synchronized (streamHandlers) {
-            for (List<ServiceReference<URLStreamHandler>> list : streamHandlers.values()) {
-                for (Iterator<ServiceReference<URLStreamHandler>> it = list.iterator(); it.hasNext();) {
+            for (List<ServiceReference<URLStreamHandlerService>> list : streamHandlers.values()) {
+                for (Iterator<ServiceReference<URLStreamHandlerService>> it = list.iterator(); it.hasNext();) {
                     if (it.next().equals(reference)) {
                         it.remove();
                         break;
@@ -82,7 +83,7 @@ final class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory 
 
     void clearHandlers() {
         synchronized (streamHandlers) {
-            for (List<ServiceReference<URLStreamHandler>> list : streamHandlers.values()) {
+            for (List<ServiceReference<URLStreamHandlerService>> list : streamHandlers.values()) {
                 list.clear();
             }
         }

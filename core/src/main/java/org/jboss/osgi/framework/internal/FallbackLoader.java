@@ -383,7 +383,7 @@ final class FallbackLoader implements LocalLoader {
         String resName = context.resName;
         int lastIndex = resName.lastIndexOf('/');
         String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
-        SystemPaths systemPaths = frameworkState.getSystemPathsPlugin();
+        SystemPaths systemPaths = frameworkState.getSystemPaths();
         if (systemPaths.getSystemPaths().contains(pathName)) {
             context.targetRevision = frameworkState.getSystemBundle().getBundleRevision();
         }

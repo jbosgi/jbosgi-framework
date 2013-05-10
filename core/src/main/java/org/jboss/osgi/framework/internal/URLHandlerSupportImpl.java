@@ -60,9 +60,9 @@ import org.osgi.util.tracker.ServiceTracker;
 final class URLHandlerSupportImpl implements URLHandlerSupport {
 
     private final BundleManagerPlugin bundleManager;
-    private ServiceTracker streamServiceTracker;
-    private ServiceTracker contentServiceTracker;
-    private ServiceRegistration registration;
+    private ServiceTracker<URLStreamHandlerService, URLStreamHandlerService> streamServiceTracker;
+    private ServiceTracker<ContentHandler, ContentHandler> contentServiceTracker;
+    private ServiceRegistration<URLStreamHandlerService> registration;
 
     private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
     private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
@@ -130,15 +130,15 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
         props.put(URLConstants.URL_HANDLER_PROTOCOL, BundleProtocolHandler.PROTOCOL_NAME);
         BundleProtocolHandler service = new BundleProtocolHandler(bundleManager);
         BundleContext systemContext = bundleManager.getSystemBundle().getBundleContext();
-        registration = systemContext.registerService(URLStreamHandlerService.class.getName(), service, props);
+        registration = systemContext.registerService(URLStreamHandlerService.class, service, props);
     }
 
     private void setupContentHandlerTracker(BundleContext systemContext) {
-        contentServiceTracker = new ServiceTracker(systemContext, ContentHandler.class.getName(), null) {
+        contentServiceTracker = new ServiceTracker<ContentHandler, ContentHandler>(systemContext, ContentHandler.class, null) {
 
             @Override
-            public Object addingService(ServiceReference reference) {
-                Object service = super.addingService(reference);
+            public ContentHandler addingService(ServiceReference<ContentHandler> reference) {
+                ContentHandler service = super.addingService(reference);
                 String[] mimeTypes = parseServiceProperty(reference.getProperty(URLConstants.URL_CONTENT_MIMETYPE));
                 if (mimeTypes != null && service instanceof ContentHandler) {
                     LOGGER.debugf("Adding content handler '%s' for: %s", service, Arrays.asList(mimeTypes));
@@ -150,13 +150,13 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
             }
 
             @Override
-            public void modifiedService(ServiceReference reference, Object service) {
+            public void modifiedService(ServiceReference<ContentHandler> reference, ContentHandler service) {
                 removedService(reference, service);
                 addingService(reference);
             }
 
             @Override
-            public void removedService(ServiceReference reference, Object service) {
+            public void removedService(ServiceReference<ContentHandler> reference, ContentHandler service) {
                 super.removedService(reference, service);
                 contentHandlerDelegate.removeHandler(reference);
             }
@@ -165,11 +165,11 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
     }
 
     private void setupStreamHandlerTracker(BundleContext systemContext) {
-        streamServiceTracker = new ServiceTracker(systemContext, URLStreamHandlerService.class.getName(), null) {
+        streamServiceTracker = new ServiceTracker<URLStreamHandlerService, URLStreamHandlerService>(systemContext, URLStreamHandlerService.class, null) {
 
             @Override
-            public Object addingService(ServiceReference reference) {
-                Object service = super.addingService(reference);
+            public URLStreamHandlerService addingService(ServiceReference<URLStreamHandlerService> reference) {
+                URLStreamHandlerService service = super.addingService(reference);
                 String[] protocols = parseServiceProperty(reference.getProperty(URLConstants.URL_HANDLER_PROTOCOL));
                 if (protocols != null && service instanceof URLStreamHandlerService) {
                     LOGGER.tracef("Adding stream handler '%s' for: %s", service, Arrays.asList(protocols));
@@ -181,13 +181,13 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
             }
 
             @Override
-            public void modifiedService(ServiceReference reference, Object service) {
+            public void modifiedService(ServiceReference<URLStreamHandlerService> reference, URLStreamHandlerService service) {
                 removedService(reference, service);
                 addingService(reference);
             }
 
             @Override
-            public void removedService(ServiceReference reference, Object service) {
+            public void removedService(ServiceReference<URLStreamHandlerService> reference, URLStreamHandlerService service) {
                 super.removedService(reference, service);
                 streamHandlerDelegate.removeHandler(reference);
             }
@@ -202,7 +202,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
      */
     @Override
     public URLStreamHandler createURLStreamHandler(String protocol) {
-        List<ServiceReference<URLStreamHandler>> refList = streamHandlerDelegate.getStreamHandlers(protocol);
+        List<ServiceReference<URLStreamHandlerService>> refList = streamHandlerDelegate.getStreamHandlers(protocol);
         if (refList == null || refList.isEmpty())
             return null;
 
@@ -252,10 +252,10 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
 
         // This list is maintained in the ServiceTracker that tracks the URLStreamHandlerService
         // This proxy should always use to top element (if it contains any elements).
-        private final List<ServiceReference<URLStreamHandler>> serviceReferences;
+        private final List<ServiceReference<URLStreamHandlerService>> serviceReferences;
         private final String protocol;
 
-        public URLStreamHandlerProxy(String protocol, List<ServiceReference<URLStreamHandler>> refList) {
+        public URLStreamHandlerProxy(String protocol, List<ServiceReference<URLStreamHandlerService>> refList) {
             this.protocol = protocol;
             this.serviceReferences = refList;
         }
@@ -334,9 +334,9 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
         private URLStreamHandlerService getHandlerService() {
             if (serviceReferences.isEmpty())
                 throw MESSAGES.illegalStateNoStreamHandlersForProtocol(protocol);
-            ServiceReference ref = serviceReferences.get(0);
-            Object service = ref.getBundle().getBundleContext().getService(ref);
-            return (URLStreamHandlerService) service;
+            ServiceReference<URLStreamHandlerService> ref = serviceReferences.get(0);
+            URLStreamHandlerService service = ref.getBundle().getBundleContext().getService(ref);
+            return service;
         }
     }
 }
