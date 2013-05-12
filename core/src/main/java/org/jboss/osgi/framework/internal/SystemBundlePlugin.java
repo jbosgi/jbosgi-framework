@@ -215,7 +215,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
     }
 
     private void addToEnvironment(SystemBundleRevision sysrev) {
-        XEnvironment env = frameworkState.getEnvironment();
+        FrameworkEnvironment env = frameworkState.getFrameworkEnvironment();
         env.installResources(sysrev);
     }
 }

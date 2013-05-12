@@ -22,12 +22,11 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.value.InjectedValue;
+import org.jboss.msc.service.StartContext;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.EnvironmentImpl;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.spi.AbstractEnvironment;
 
 /**
  * The default {@link XEnvironment} plugin.
@@ -37,20 +36,17 @@ import org.jboss.osgi.resolver.XEnvironment;
  */
 public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> {
 
-    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
-
     public EnvironmentPlugin() {
         super(Services.ENVIRONMENT);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<XEnvironment> builder) {
-        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
     protected XEnvironment createServiceValue(StartContext startContext) {
-        return new EnvironmentImpl(injectedLockManager.getValue());
+        return new AbstractEnvironment();
     }
 }

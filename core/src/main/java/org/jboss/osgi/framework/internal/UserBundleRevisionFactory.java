@@ -33,16 +33,12 @@ import java.io.IOException;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
-import org.jboss.osgi.framework.spi.LockManager.LockContext;
-import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -152,17 +148,10 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
     }
 
     private void installBundleRevision(UserBundleState userBundle, R brev) throws BundleException {
-        LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
-        try {
-            brev.putAttachment(BUNDLE_KEY, userBundle);
-            lockContext = lockManager.lockItems(Method.INSTALL, userBundle);
-            XEnvironment env = frameworkState.getEnvironment();
-            env.installResources(new XResource[] { brev });
-            userBundle.addBundleRevision(bundleRevision);
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
+        brev.putAttachment(BUNDLE_KEY, userBundle);
+        FrameworkEnvironment env = frameworkState.getFrameworkEnvironment();
+        env.installResources(brev);
+        userBundle.addBundleRevision(bundleRevision);
     }
 
     private void validateBundleRevision(R bundleRevision, OSGiMetaData metadata) throws BundleException {

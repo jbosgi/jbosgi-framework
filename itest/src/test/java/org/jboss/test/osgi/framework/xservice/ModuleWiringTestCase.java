@@ -33,6 +33,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
@@ -98,7 +99,7 @@ public class ModuleWiringTestCase extends AbstractModuleIntegrationTest {
         Assert.assertEquals(0, types);
 
         XCapability cap = (XCapability) brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
-        Assert.assertEquals(IdentityNamespace.TYPE_UNKNOWN, cap.adapt(XIdentityCapability.class).getType());
+        Assert.assertEquals(XResource.TYPE_MODULE, cap.adapt(XIdentityCapability.class).getType());
     }
 
     @Test

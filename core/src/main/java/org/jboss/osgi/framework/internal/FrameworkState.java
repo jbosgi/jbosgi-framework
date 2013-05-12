@@ -148,6 +148,10 @@ final class FrameworkState {
         return injectedEnvironment.getValue();
     }
 
+    FrameworkEnvironment getFrameworkEnvironment() {
+        return new FrameworkEnvironment(getLockManager(), getEnvironment());
+    }
+
     XResolver getResolver() {
         return injectedResolverPlugin.getValue();
     }
