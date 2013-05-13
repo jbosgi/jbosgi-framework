@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.osgi.framework.spi;
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -27,7 +27,13 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.ResolverImpl;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
+import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.resolver.XResolver;
 
 /**
@@ -36,21 +42,23 @@ import org.jboss.osgi.resolver.XResolver;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
+final class FrameworkResolverPlugin extends AbstractIntegrationService<XResolver> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
     private final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
+    private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
 
-    public ResolverPlugin() {
+    FrameworkResolverPlugin() {
         super(Services.RESOLVER);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<XResolver> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(IntegrationServices.ABSTRACT_RESOLVER, XResolver.class, injectedResolver);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, injectedNativeCode);
         builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class, injectedModuleLoader);
@@ -64,7 +72,8 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
         NativeCode nativeCode = injectedNativeCode.getValue();
         ModuleManager moduleManager = injectedModuleManager.getValue();
         FrameworkModuleLoader moduleLoader = injectedModuleLoader.getValue();
+        XResolver resolver = injectedResolver.getValue();
         LockManager lockManager = injectedLockManager.getValue();
-        return new ResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, lockManager);
+        return new FrameworkResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, resolver, lockManager);
     }
 }

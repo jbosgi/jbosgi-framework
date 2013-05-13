@@ -33,11 +33,11 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.internal.InternalConstants;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XBundleWiring;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * An abstract implementation that adapts a {@link Module} to a {@link BundleRevision}
@@ -62,8 +62,8 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
         createWiring();
     }
 
-    protected BundleWiring createWiring() {
-        BundleWiring wiring = new AbstractBundleWiring(this, null, null);
+    protected XBundleWiring createWiring() {
+        XBundleWiring wiring = new AbstractBundleWiring(this, null, null);
         getWiringSupport().setWiring(wiring);
         return wiring;
     }

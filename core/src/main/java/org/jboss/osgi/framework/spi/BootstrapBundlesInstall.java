@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.spi;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

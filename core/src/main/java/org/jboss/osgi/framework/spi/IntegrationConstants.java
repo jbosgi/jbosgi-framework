@@ -28,8 +28,8 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.AttachmentKey;
+import org.jboss.osgi.spi.BundleInfo;
 import org.osgi.framework.BundleActivator;
 
 /**

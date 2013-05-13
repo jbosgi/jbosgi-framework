@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.InternalConstants.MODULE_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_REVISION_KEY;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;

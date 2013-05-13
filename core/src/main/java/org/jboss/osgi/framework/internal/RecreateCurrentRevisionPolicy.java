@@ -26,6 +26,7 @@ import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KE
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.framework.spi.BundleManager;

@@ -34,7 +34,6 @@ import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
-import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilder;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
@@ -130,11 +129,6 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     abstract Class<?> loadClass(String className) throws ClassNotFoundException;
 
     abstract URL getLocalizationEntry(String path);
-
-    @Override
-    public XBundle getBundle() {
-        return getAttachment(IntegrationConstants.BUNDLE_KEY);
-    }
 
     @Override
     public ModuleIdentifier getModuleIdentifier() {

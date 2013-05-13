@@ -57,6 +57,7 @@ final class FrameworkState {
     final InjectedValue<StorageManager> injectedStorageManager = new InjectedValue<StorageManager>();
     final InjectedValue<DeploymentProvider> injectedDeploymentProvider = new InjectedValue<DeploymentProvider>();
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
+    final InjectedValue<FrameworkEnvironment> injectedFrameworkEnvironment = new InjectedValue<FrameworkEnvironment>();
     final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
     final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
@@ -70,7 +71,7 @@ final class FrameworkState {
     final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    final InjectedValue<XResolver> injectedResolverPlugin = new InjectedValue<XResolver>();
+    final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
 
     FrameworkState(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
@@ -96,6 +97,10 @@ final class FrameworkState {
         return injectedCoreServices.getValue();
     }
 
+    FrameworkEnvironment getFrameworkEnvironment() {
+        return injectedFrameworkEnvironment.getValue();
+    }
+
     FrameworkEvents getFrameworkEvents() {
         return injectedFrameworkEvents.getValue();
     }
@@ -110,6 +115,10 @@ final class FrameworkState {
 
     FrameworkStartLevelSupport getFrameworkStartLevel() {
         return injectedFrameworkStartLevel.getValue();
+    }
+
+    XResolver getFrameworkResolver() {
+        return injectedResolver.getValue();
     }
 
     FrameworkWiring getFrameworkWiring() {
@@ -146,13 +155,5 @@ final class FrameworkState {
 
     XEnvironment getEnvironment() {
         return injectedEnvironment.getValue();
-    }
-
-    FrameworkEnvironment getFrameworkEnvironment() {
-        return new FrameworkEnvironment(getLockManager(), getEnvironment());
-    }
-
-    XResolver getResolver() {
-        return injectedResolverPlugin.getValue();
     }
 }

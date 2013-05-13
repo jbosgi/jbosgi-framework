@@ -76,9 +76,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
     private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
-    private final XEnvironment environment;
     private final XResolver resolver;
     private final LockManager lockManager;
+    private final XEnvironment environment;
     private final ExecutorService executorService;
 
     public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager, ExecutorService executorService) {

@@ -148,9 +148,8 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
     }
 
     private void installBundleRevision(UserBundleState userBundle, R brev) throws BundleException {
-        brev.putAttachment(BUNDLE_KEY, userBundle);
-        FrameworkEnvironment env = frameworkState.getFrameworkEnvironment();
-        env.installResources(brev);
+        brev.setBundle(userBundle);
+        frameworkState.getFrameworkEnvironment().installResources(brev);
         userBundle.addBundleRevision(bundleRevision);
     }
 

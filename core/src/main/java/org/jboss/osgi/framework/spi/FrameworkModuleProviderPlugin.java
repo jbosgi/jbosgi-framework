@@ -22,8 +22,8 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.StartContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.FrameworkModuleProviderImpl;

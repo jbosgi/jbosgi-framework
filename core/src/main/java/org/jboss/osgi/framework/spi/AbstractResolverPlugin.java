@@ -24,27 +24,29 @@ package org.jboss.osgi.framework.spi;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
-import org.jboss.osgi.framework.internal.LockManagerImpl;
+import org.jboss.msc.service.StartException;
+import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.spi.AbstractResolver;
 
 /**
- * The plugin for the {@link LockManager}.
+ * The resolver plugin.
  *
  * @author thomas.diesler@jboss.com
- * @since 22-Nov-2012
+ * @since 15-Feb-2012
  */
-public class LockManagerPlugin extends AbstractIntegrationService<LockManager> {
+public class AbstractResolverPlugin extends AbstractIntegrationService<XResolver> {
 
-    public LockManagerPlugin() {
-        super(IntegrationServices.LOCK_MANAGER_PLUGIN);
+    public AbstractResolverPlugin() {
+        super(IntegrationServices.ABSTRACT_RESOLVER);
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<LockManager> builder) {
+    protected void addServiceDependencies(ServiceBuilder<XResolver> builder) {
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    protected LockManager createServiceValue(StartContext startContext) {
-        return new LockManagerImpl();
+    protected XResolver createServiceValue(StartContext startContext) throws StartException {
+        return new AbstractResolver();
     }
 }

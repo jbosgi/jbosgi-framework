@@ -53,7 +53,6 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -112,7 +111,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         this.initialRevision = brev;
 
         // Link the bundle revision to this state
-        brev.putAttachment(IntegrationConstants.BUNDLE_KEY, this);
+        brev.setBundle(this);
     }
 
     static AbstractBundleState<?> assertBundleState(Bundle bundle) {
@@ -199,7 +198,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     void addBundleRevision(R rev) {
-        rev.putAttachment(IntegrationConstants.BUNDLE_KEY, this);
+        rev.setBundle(this);
         currentRevision = rev;
     }
 

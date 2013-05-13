@@ -36,7 +36,6 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.BundleStartLevelPlugin;
-import org.jboss.osgi.framework.spi.StorageManagerPlugin;
 import org.jboss.osgi.framework.spi.DeploymentProviderPlugin;
 import org.jboss.osgi.framework.spi.EnvironmentPlugin;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -49,10 +48,10 @@ import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
 import org.jboss.osgi.framework.spi.LockManagerPlugin;
 import org.jboss.osgi.framework.spi.ModuleManagerPlugin;
 import org.jboss.osgi.framework.spi.NativeCodePlugin;
-import org.jboss.osgi.framework.spi.ResolverPlugin;
 import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
 import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.framework.spi.StartLevelManagerPlugin;
+import org.jboss.osgi.framework.spi.StorageManagerPlugin;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.Bundle;
@@ -82,7 +81,7 @@ import org.osgi.framework.launch.Framework;
  *         +---{@link BootstrapBundlesInstallPlugin}
  *             +---{@link FrameworkCreate}
  *                 +---{@link DeploymentProviderPlugin}
- *                 +---{@link ResolverPlugin}
+ *                 +---{@link FrameworkResolverPlugin}
  *                 |   +---{@link NativeCodePlugin}
  *                 +---{@link ServiceManagerPlugin}
  *                 +---{@link FrameworkWiringPlugin}

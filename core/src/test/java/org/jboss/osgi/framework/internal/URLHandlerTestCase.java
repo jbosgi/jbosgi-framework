@@ -68,12 +68,12 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         URLStreamHandlerService protocol1Svc = new TestURLStreamHandlerService("test_protocol1");
         Dictionary<String, Object> props1 = new Hashtable<String, Object>();
         props1.put(URLConstants.URL_HANDLER_PROTOCOL, "protocol1");
-        ServiceRegistration reg1 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), protocol1Svc, props1);
+        ServiceRegistration<URLStreamHandlerService> reg1 = getSystemContext().registerService(URLStreamHandlerService.class, protocol1Svc, props1);
 
         URLStreamHandlerService protocol2Svc = new TestURLStreamHandlerService("test_protocol2");
         Dictionary<String, Object> props2 = new Hashtable<String, Object>();
         props2.put(URLConstants.URL_HANDLER_PROTOCOL, new String[] { "protocol2", "altprot2" });
-        ServiceRegistration reg2 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), protocol2Svc, props2);
+        ServiceRegistration<URLStreamHandlerService> reg2 = getSystemContext().registerService(URLStreamHandlerService.class, protocol2Svc, props2);
 
         URL url = new URL("protocol1://blah");
         assertEquals("test_protocol1blah", new String(suckStream(url.openStream())));
@@ -108,19 +108,19 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         Dictionary<String, Object> props1 = new Hashtable<String, Object>();
         props1.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props1.put(Constants.SERVICE_RANKING, 10);
-        ServiceRegistration reg1 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc1, props1);
+        ServiceRegistration<URLStreamHandlerService> reg1 = getSystemContext().registerService(URLStreamHandlerService.class, svc1, props1);
 
         URLStreamHandlerService svc2 = new TestURLStreamHandlerService("tp2");
         Dictionary<String, Object> props2 = new Hashtable<String, Object>();
         props2.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props2.put(Constants.SERVICE_RANKING, 15);
-        ServiceRegistration reg2 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc2, props2);
+        ServiceRegistration<URLStreamHandlerService> reg2 = getSystemContext().registerService(URLStreamHandlerService.class, svc2, props2);
 
         URLStreamHandlerService svc3 = new TestURLStreamHandlerService("tp3");
         Dictionary<String, Object> props3 = new Hashtable<String, Object>();
         props3.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props3.put(Constants.SERVICE_RANKING, 5);
-        ServiceRegistration reg3 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc3, props3);
+        ServiceRegistration<URLStreamHandlerService> reg3 = getSystemContext().registerService(URLStreamHandlerService.class, svc3, props3);
 
         URL url = new URL("p1://testing");
         assertEquals("tp2testing", new String(suckStream(url.openStream())));
@@ -137,7 +137,7 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         Dictionary<String, Object> props4 = new Hashtable<String, Object>();
         props4.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props4.put(Constants.SERVICE_RANKING, 7);
-        ServiceRegistration reg4 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc4, props4);
+        ServiceRegistration<URLStreamHandlerService> reg4 = getSystemContext().registerService(URLStreamHandlerService.class, svc4, props4);
 
         URL url4 = new URL("p1://testing");
         assertEquals("tp1testing", new String(suckStream(url4.openStream())));
@@ -146,7 +146,7 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         Dictionary<String, Object> props5 = new Hashtable<String, Object>();
         props5.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props5.put(Constants.SERVICE_RANKING, 11);
-        ServiceRegistration reg5 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc5, props5);
+        ServiceRegistration<URLStreamHandlerService> reg5 = getSystemContext().registerService(URLStreamHandlerService.class, svc5, props5);
 
         URL url5 = new URL("p1://testing");
         assertEquals("tp5testing", new String(suckStream(url5.openStream())));
@@ -162,12 +162,12 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         Dictionary<String, Object> props1 = new Hashtable<String, Object>();
         props1.put(URLConstants.URL_HANDLER_PROTOCOL, "p1");
         props1.put(Constants.SERVICE_RANKING, 10);
-        ServiceRegistration reg1 = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc1, props1);
+        ServiceRegistration<URLStreamHandlerService> reg1 = getSystemContext().registerService(URLStreamHandlerService.class, svc1, props1);
 
         ContentHandler ch1 = new TestContentHandler("test_content");
         Dictionary<String, Object> chprops1 = new Hashtable<String, Object>();
         chprops1.put(URLConstants.URL_CONTENT_MIMETYPE, new String[] { "foo/bar" });
-        ServiceRegistration reg2 = getSystemContext().registerService(ContentHandler.class.getName(), ch1, chprops1);
+        ServiceRegistration<ContentHandler> reg2 = getSystemContext().registerService(ContentHandler.class, ch1, chprops1);
 
         URL url = new URL("p1://test");
         Object ob = url.getContent();
@@ -182,7 +182,7 @@ public class URLHandlerTestCase extends OSGiFrameworkTest {
         URLStreamHandlerService svc = new DelegationTestURLStreamHandlerService();
         Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(URLConstants.URL_HANDLER_PROTOCOL, "jbossosgitest");
-        ServiceRegistration reg = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc, props);
+        ServiceRegistration<URLStreamHandlerService> reg = getSystemContext().registerService(URLStreamHandlerService.class, svc, props);
 
         URLStreamHandlerFactory factory = new OSGiStreamHandlerFactoryService();
         URLStreamHandler handler = factory.createURLStreamHandler("jbossosgitest");

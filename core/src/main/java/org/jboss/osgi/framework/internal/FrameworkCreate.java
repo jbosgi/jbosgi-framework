@@ -82,10 +82,10 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(IntegrationServices.FRAMEWORK_START_LEVEL_PLUGIN, FrameworkStartLevelSupport.class, frameworkState.injectedFrameworkStartLevel);
         builder.addDependency(IntegrationServices.FRAMEWORK_WIRING_PLUGIN, FrameworkWiring.class, frameworkState.injectedFrameworkWiring);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
-        builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(IntegrationServices.SERVICE_MANAGER_PLUGIN, ServiceManager.class, frameworkState.injectedServiceManager);
         builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class, frameworkState.injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

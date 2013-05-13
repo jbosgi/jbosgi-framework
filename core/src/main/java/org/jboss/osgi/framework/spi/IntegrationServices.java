@@ -26,6 +26,7 @@ import static org.jboss.osgi.framework.Services.JBOSGI_BASE_NAME;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
@@ -36,7 +37,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public interface IntegrationServices {
+public interface IntegrationServices  {
 
 	/** The prefix for all OSGi services */
     ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
@@ -58,6 +59,8 @@ public interface IntegrationServices {
     /** The service name for the system {@link BundleContext} */
     ServiceName SYSTEM_CONTEXT_INTERNAL = INTERNAL_BASE_NAME.append("SystemContext");
 
+    /** The {@link XResolver} service name */
+    ServiceName ABSTRACT_RESOLVER = Services.JBOSGI_BASE_NAME.append("AbstractResolver");
 	/** The {@link BootstrapBundlesInstall} service for auto install bundles */
 	ServiceName BOOTSTRAP_BUNDLES = JBOSGI_BASE_NAME.append("BootstrapBundles");
 	/** The {@link BootstrapBundlesActivate} service for auto install bundles */

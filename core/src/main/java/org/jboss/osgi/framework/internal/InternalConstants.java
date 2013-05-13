@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 
 import org.jboss.modules.Module;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.spi.AttachmentKey;
 

@@ -21,13 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.InternalConstants.NATIVE_LIBRARY_METADATA_KEY;
 import static org.jboss.osgi.resolver.ResolverMessages.MESSAGES;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
@@ -49,15 +48,12 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
-import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceCapability;
+import org.jboss.osgi.resolver.XWiring;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
-import org.jboss.osgi.resolver.spi.XResolverFactoryLocator;
 import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -65,13 +61,9 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.namespace.HostNamespace;
-import org.osgi.framework.namespace.IdentityNamespace;
-import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
@@ -84,33 +76,27 @@ import org.osgi.service.resolver.ResolveContext;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public final class ResolverImpl implements XResolver {
+final class FrameworkResolverImpl implements XResolver {
 
     private final BundleManagerPlugin bundleManager;
     private final NativeCode nativeCode;
     private final ModuleManager moduleManager;
     private final FrameworkModuleLoader moduleLoader;
     private final LockManager lockManager;
-    private final XResolver delegate;
+    private final XResolver resolver;
 
-    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, LockManager lockManager) {
+    FrameworkResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XResolver resolver, LockManager lockManager) {
         this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
         this.moduleLoader = moduleLoader;
         this.lockManager = lockManager;
-        XResolverFactory resolverFactory = XResolverFactoryLocator.getResolverFactory();
-        this.delegate = resolverFactory.createResolver();
+        this.resolver = resolver;
     }
 
     @Override
     public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
-        Collection<Resource> manres = new HashSet<Resource>(mandatory != null ? mandatory : Collections.<Resource> emptySet());
-        Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
-        removeUninstalled(manres, optres);
-        appendOptionalFragments(environment, manres, optres);
-        appendOptionalHostBundles(manres, optres);
-        return delegate.createResolveContext(environment, manres, optres);
+        return resolver.createResolveContext(environment, mandatory, optional);
     }
 
     @Override
@@ -130,8 +116,8 @@ public final class ResolverImpl implements XResolver {
         if (ResolverHookProcessor.getCurrentProcessor() != null)
             throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
+        XEnvironment env = resolveContext.getEnvironment();
         BundleContext syscontext = bundleManager.getSystemContext();
-        XEnvironment environment = resolveContext.getEnvironment();
         Collection<Resource> manres = new HashSet<Resource>(resolveContext.getMandatoryResources());
         Collection<Resource> optres = new HashSet<Resource>(resolveContext.getOptionalResources());
         ResolverHookProcessor hookregs = new ResolverHookProcessor(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
@@ -161,10 +147,10 @@ public final class ResolverImpl implements XResolver {
                         return result;
                     }
                 });
-                resolveContext = delegate.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
+                resolveContext = resolver.createResolveContext(env, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
             } else {
                 filterSingletons(manres, optres);
-                resolveContext = delegate.createResolveContext(environment, manres, optres);
+                resolveContext = resolver.createResolveContext(env, manres, optres);
             }
 
             Map<Resource, List<Wire>> wiremap;
@@ -173,9 +159,9 @@ public final class ResolverImpl implements XResolver {
             try {
                 FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
                 lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-                wiremap = delegate.resolve(resolveContext);
+                wiremap = resolver.resolve(resolveContext);
                 if (applyResults) {
-                    applyResolverResults(environment, wiremap);
+                    applyResolverResults(env, wiremap);
                 }
             } finally {
                 lockManager.unlockItems(lockContext);
@@ -205,63 +191,6 @@ public final class ResolverImpl implements XResolver {
             }
         }
         return filtered;
-    }
-
-    private void removeUninstalled(Collection<Resource> manres, Collection<Resource> optres) {
-        for (Resource res : getCombinedResources(manres, optres)) {
-            if (res instanceof XBundleRevision) {
-                XBundleRevision brev = (XBundleRevision) res;
-                if (brev.getBundle().getState() == Bundle.UNINSTALLED) {
-                    manres.remove(brev);
-                    optres.remove(brev);
-                }
-            }
-        }
-    }
-
-    private void appendOptionalFragments(XEnvironment environment, Collection<? extends Resource> manres, Collection<Resource> optres) {
-        Collection<Capability> hostcaps = new HashSet<Capability>();
-        HashSet<Resource> combined = getCombinedResources(manres, optres);
-        for (Resource res : combined) {
-            for (Capability hostcap : res.getCapabilities(HostNamespace.HOST_NAMESPACE)) {
-                hostcaps.add(hostcap);
-            }
-        }
-        HashSet<Resource> fragments = new HashSet<Resource>();
-        Iterator<XResource> itres = environment.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT));
-        while (itres.hasNext()) {
-            XBundleRevision brev = (XBundleRevision) itres.next();
-            if (brev.getBundle().getState() != Bundle.UNINSTALLED) {
-                XRequirement xreq = (XRequirement) brev.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
-                for (Capability cap : hostcaps) {
-                    if (xreq.matches(cap) && !combined.contains(brev)) {
-                        fragments.add(brev);
-                    }
-                }
-            }
-        }
-        if (fragments.isEmpty() == false) {
-            LOGGER.debugf("Adding attachable fragments: %s", fragments);
-            optres.addAll(fragments);
-        }
-    }
-
-    // Append the set of all unresolved resources if there is at least one optional package requirement
-    private void appendOptionalHostBundles(Collection<? extends Resource> manres, Collection<Resource> optres) {
-        for (Resource res : getCombinedResources(manres, optres)) {
-            for (Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
-                XPackageRequirement preq = (XPackageRequirement) req;
-                if (preq.isOptional()) {
-                    for (XBundle bundle : bundleManager.getBundles(Bundle.INSTALLED)) {
-                        XResource auxrev = bundle.getBundleRevision();
-                        if (!bundle.isFragment() && !manres.contains(auxrev)) {
-                            optres.add(auxrev);
-                        }
-                    }
-                    return;
-                }
-            }
-        }
     }
 
     private HashSet<Resource> getCombinedResources(Collection<? extends Resource> manres, Collection<Resource> optres) {
@@ -326,7 +255,7 @@ public final class ResolverImpl implements XResolver {
         Map<Resource, Wiring> wirings = environment.updateWiring(wiremap);
         for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.getWiringSupport().setWiring(entry.getValue());
+            res.getWiringSupport().setWiring((XWiring) entry.getValue());
         }
 
         // Change the bundle state to RESOLVED

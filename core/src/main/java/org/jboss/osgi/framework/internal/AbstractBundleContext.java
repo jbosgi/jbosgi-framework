@@ -34,12 +34,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
+
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.ServiceManager;
 import org.jboss.osgi.framework.spi.ServiceState;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
 import org.jboss.osgi.vfs.AbstractVFS;

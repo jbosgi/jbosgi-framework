@@ -40,11 +40,11 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -79,6 +79,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
         builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, frameworkState.injectedLockManager);
         builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, frameworkState.injectedModuleManager);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPaths.class, frameworkState.injectedSystemPaths);
+        builder.addDependency(FrameworkEnvironment.SERVICE_NAME, FrameworkEnvironment.class, frameworkState.injectedFrameworkEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -215,7 +216,6 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
     }
 
     private void addToEnvironment(SystemBundleRevision sysrev) {
-        FrameworkEnvironment env = frameworkState.getFrameworkEnvironment();
-        env.installResources(sysrev);
+        frameworkState.getFrameworkEnvironment().installResources(sysrev);
     }
 }

@@ -23,6 +23,8 @@ package org.jboss.osgi.framework.spi;
 
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.startlevel.BundleStartLevel;
+import org.osgi.framework.startlevel.FrameworkStartLevel;
 
 /**
  * An plugin to support {@link BundleStartLevel} and {@link FrameworkStartLevel}.

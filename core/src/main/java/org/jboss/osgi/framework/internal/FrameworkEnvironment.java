@@ -23,7 +23,16 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
@@ -37,48 +46,63 @@ import org.jboss.osgi.resolver.XEnvironment;
  * @author thomas.diesler@jboss.com
  * @since 12-May-2013
  */
-final class FrameworkEnvironment {
+final class FrameworkEnvironment extends AbstractIntegrationService<FrameworkEnvironment> {
 
-    private final LockManager lockManager;
-    private final XEnvironment environment;
+    final static ServiceName SERVICE_NAME = IntegrationServices.INTERNAL_BASE_NAME.append("FrameworkEnvironment");
+    
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
 
-    public FrameworkEnvironment(LockManager lockManager, XEnvironment environment) {
-        this.lockManager = lockManager;
-        this.environment = environment;
+    FrameworkEnvironment() {
+        super(SERVICE_NAME);
     }
 
-    public void installResources(XBundleRevision brev) {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<FrameworkEnvironment> builder) {
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
+    }
+
+    @Override
+    protected FrameworkEnvironment createServiceValue(StartContext startContext) throws StartException {
+        return this;
+    }
+
+    void installResources(XBundleRevision brev) {
         if (brev == null)
             throw MESSAGES.illegalArgumentNull("brev");
 
         LockContext lockContext = null;
         try {
             lockContext = lockResources(Method.INSTALL, brev);
-            environment.installResources(brev);
+            injectedEnvironment.getValue().installResources(brev);
         } finally {
             unlockResources(lockContext);
         }
     }
 
-    public void uninstallResources(XBundleRevision brev) {
+    void uninstallResources(XBundleRevision brev) {
         if (brev == null)
             throw MESSAGES.illegalArgumentNull("brev");
 
         LockContext lockContext = null;
         try {
             lockContext = lockResources(Method.UNINSTALL, brev);
-            environment.uninstallResources(brev);
+            injectedEnvironment.getValue().uninstallResources(brev);
         } finally {
             unlockResources(lockContext);
         }
     }
 
     private LockContext lockResources(Method method, XBundleRevision brev) {
+        LockManager lockManager = injectedLockManager.getValue();
         FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
         return lockManager.lockItems(method, wireLock, (LockableItem) brev.getBundle());
     }
 
     private void unlockResources(LockContext context) {
+        LockManager lockManager = injectedLockManager.getValue();
         lockManager.unlockItems(context);
     }
 }

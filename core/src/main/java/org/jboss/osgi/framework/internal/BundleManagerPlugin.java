@@ -548,9 +548,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             lockContext = lockManager.lockItems(Method.RESOLVE, items);
             LOGGER.debugf("Resolving bundle: %s", bundle);
             Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
-            XEnvironment environment = getFrameworkState().getEnvironment();
-            XResolver resolver = getFrameworkState().getResolver();
-            XResolveContext context = resolver.createResolveContext(environment, mandatory, null);
+            XResolver resolver = getFrameworkState().getFrameworkResolver();
+            XEnvironment env = getFrameworkState().getEnvironment();
+            XResolveContext context = resolver.createResolveContext(env, mandatory, null);
             resolver.resolveAndApply(context);
             LOGGER.debugf("Resolved bundle: %s", bundle);
         } finally {
@@ -659,8 +659,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void removeRevision(XBundleRevision brev, int options) {
         LOGGER.debugf("Removing revision: %s", brev);
-        XEnvironment env = getFrameworkState().getEnvironment();
-        env.uninstallResources(brev);
+        getFrameworkState().getFrameworkEnvironment().uninstallResources(brev);
         if (brev instanceof UserBundleRevision) {
             UserBundleRevision userRev = (UserBundleRevision) brev;
             userRev.getBundleState().removeRevision(userRev);

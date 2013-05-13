@@ -65,10 +65,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, injectedSystemBundle);
+        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependency(IntegrationServices.FRAMEWORK_WIRING_PLUGIN, FrameworkWiring.class, injectedFrameworkWiring);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependencies(getPreviousService());
     }
 
@@ -97,7 +97,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         if (IntegrationServices.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
             XEnvironment env = injectedEnvironment.getValue();
             List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
-            mandatory.add(injectedSystemBundle.getValue().getBundleRevision());
+            XBundle sysbundle = injectedSystemBundle.getValue();
+            mandatory.add(sysbundle.getBundleRevision());
             for (XBundle bundle : resolvableBundles) {
                 mandatory.add(bundle.getBundleRevision());
             }

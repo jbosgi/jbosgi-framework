@@ -24,9 +24,9 @@ package org.jboss.osgi.framework.spi;
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.osgi.framework.launch.Framework;
 
 /**
