@@ -127,7 +127,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
         List<Capability> icaps = brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE);
         if (icaps.size() > 0) {
             XIdentityCapability icap = (XIdentityCapability) icaps.get(0);
-            symbolicName = icap.getSymbolicName();
+            symbolicName = icap.getName();
         } else {
             symbolicName = module.getIdentifier().getName();
         }

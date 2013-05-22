@@ -120,7 +120,7 @@ public final class ModuleManagerImpl implements ModuleManager {
         Module module = brev.getAttachment(InternalConstants.MODULE_KEY);
         if (module != null) {
             identifier = module.getIdentifier();
-        } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
+        } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
             identifier = moduleLoader.getModuleIdentifier(brev);
@@ -200,7 +200,7 @@ public final class ModuleManagerImpl implements ModuleManager {
 
         ModuleIdentifier identifier;
         XIdentityCapability icap = brev.getIdentityCapability();
-        if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
+        if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
             HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(brev);

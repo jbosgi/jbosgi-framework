@@ -170,7 +170,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
                     return metadata;
                 }
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             LOGGER.warnCannotProcessMetadataProperties(ex, rootFile);
         }
         return null;

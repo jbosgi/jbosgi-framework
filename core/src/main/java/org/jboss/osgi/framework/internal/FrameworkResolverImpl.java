@@ -131,7 +131,7 @@ final class FrameworkResolverImpl implements XResolver {
                     public Collection<BundleCapability> findCollisionCandidates(BundleCapability viewpoint) {
                         Collection<BundleCapability> result = new HashSet<BundleCapability>();
                         if (viewpoint instanceof XResourceCapability) {
-                            String symbolicName = ((XResourceCapability) viewpoint).getSymbolicName();
+                            String symbolicName = ((XResourceCapability) viewpoint).getName();
                             for (XBundle bundle : bundleManager.getBundles(symbolicName, null)) {
                                 XBundleRevision xres = bundle.getBundleRevision();
                                 List<BundleCapability> bcaps = xres.getDeclaredCapabilities(viewpoint.getNamespace());
@@ -205,11 +205,11 @@ final class FrameworkResolverImpl implements XResolver {
             XResource xres = (XResource) res;
             XIdentityCapability icap = xres.getIdentityCapability();
             if (icap.isSingleton()) {
-                if (singletons.get(icap.getSymbolicName()) != null) {
+                if (singletons.get(icap.getName()) != null) {
                     manres.remove(res);
                     optres.remove(res);
                 } else {
-                    singletons.put(icap.getSymbolicName(), xres);
+                    singletons.put(icap.getName(), xres);
                 }
             }
         }
