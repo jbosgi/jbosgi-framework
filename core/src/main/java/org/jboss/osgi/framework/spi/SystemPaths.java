@@ -34,7 +34,7 @@ import org.jboss.modules.filter.PathFilter;
 public interface SystemPaths {
 
     String[] DEFAULT_FRAMEWORK_PACKAGES = new String[]{
-            "org.jboss.modules;version=1.1",
+            "org.jboss.modules;version=1.2",
             "org.jboss.msc.service;version=1.0",
             "org.jboss.osgi.deployment.deployer;version=2.0",
             "org.jboss.osgi.deployment.interceptor;version=2.0",
