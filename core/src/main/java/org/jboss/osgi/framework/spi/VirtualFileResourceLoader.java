@@ -149,15 +149,15 @@ public final class VirtualFileResourceLoader implements IterableResourceLoader {
         List<Resource> result = new ArrayList<Resource>();
         List<VirtualFile> entryPaths;
         try {
-            if (recurse) {
-                entryPaths = virtualFile.getChildrenRecursively();
-            } else {
-                VirtualFile parent = virtualFile.getChild(startPath);
-                if (parent != null) {
-                    entryPaths = parent.getChildren();
+            VirtualFile parent = virtualFile.getChild(startPath);
+            if (parent != null) {
+                if (recurse) {
+                    entryPaths = parent.getChildrenRecursively();
                 } else {
-                    entryPaths = Collections.emptyList();
+                    entryPaths = parent.getChildren();
                 }
+            } else {
+                entryPaths = Collections.emptyList();
             }
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
