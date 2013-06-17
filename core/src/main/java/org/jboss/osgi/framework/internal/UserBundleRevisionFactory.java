@@ -41,7 +41,6 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -98,7 +97,6 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 installBundleRevision(userBundle, bundleRevision);
                 userBundle.initLazyActivation();
-                userBundle.changeState(Bundle.INSTALLED, 0);
                 LOGGER.infoBundleInstalled(bundle);
                 FrameworkEvents events = frameworkState.getFrameworkEvents();
                 events.fireBundleEvent(targetContext, bundle, BundleEvent.INSTALLED);

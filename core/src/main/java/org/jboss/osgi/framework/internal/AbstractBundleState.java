@@ -88,7 +88,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     private final long bundleId;
     private final FrameworkState frameworkState;
     private final ReentrantLock bundleLock = new ReentrantLock();
-    private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+    private final AtomicInteger bundleState = new AtomicInteger(INSTALLED);
     private final List<ServiceState<?>> registeredServices = new CopyOnWriteArrayList<ServiceState<?>>();
     private final ConcurrentHashMap<ServiceState<?>, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState<?>, AtomicInteger>();
 
