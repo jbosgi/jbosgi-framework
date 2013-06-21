@@ -50,7 +50,7 @@ public class BundleLifecycleImpl implements BundleLifecycle {
 
         @Override
         public XBundleRevision createBundleRevision(BundleContext context, Deployment dep) throws BundleException {
-            return bundleManager.createBundleRevision(context, dep, null);
+            return bundleManager.installBundleRevision(context, dep, null);
         }
 
         @Override

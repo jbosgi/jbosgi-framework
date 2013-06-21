@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -62,6 +63,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
@@ -81,10 +83,12 @@ import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -458,7 +462,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public XBundleRevision createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException {
+    public XBundleRevision installBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (deployment == null)
@@ -516,6 +520,30 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             throw ex;
         }
 
+        return brev;
+    }
+
+    @Override
+    public XBundleRevision installBundleRevision(final BundleContext context, final Module module, final OSGiMetaData metadata) throws BundleException {
+
+        XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
+            @Override
+            public XBundleRevision createResource() {
+                return new AbstractBundleRevisionAdaptor(context, module);
+            }
+        };
+
+        XBundleRevision brev;
+        XResourceBuilder<XBundleRevision> builder = XBundleRevisionBuilderFactory.create(factory);
+        if (metadata != null) {
+            builder.loadFrom(metadata);
+            brev = builder.getResource();
+            brev.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
+        } else {
+            builder.loadFrom(module);
+            brev = builder.getResource();
+        }
+        injectedEnvironment.getValue().installResources(brev);
         return brev;
     }
 

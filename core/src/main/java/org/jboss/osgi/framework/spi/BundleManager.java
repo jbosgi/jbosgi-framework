@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import org.jboss.modules.Module;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
@@ -111,7 +113,18 @@ public interface BundleManager extends Service<BundleManager> {
      *
      * @return The bundle revision
      */
-    XBundleRevision createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException;
+    XBundleRevision installBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException;
+
+    /**
+     * Create a {@link XBundleRevision} from the given module.
+     *
+     * @param context The context that is used to install the revision
+     * @param module The module that is registered with the OSGi layer
+     * @param metadata The OSGi metadata associated with the module
+     *
+     * @return The bundle revision
+     */
+    XBundleRevision installBundleRevision(BundleContext context, Module module, OSGiMetaData metadata) throws BundleException;
 
     /**
      * Resolve the given bundle

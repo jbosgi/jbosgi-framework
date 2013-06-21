@@ -87,7 +87,7 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
 
         // Create the {@link XBundleRevision} service from {@link Deployment}
         BundleContext context = bundleManager.getSystemBundle().getBundleContext();
-        bundleManager.createBundleRevision(context, dep, null);
+        bundleManager.installBundleRevision(context, dep, null);
     }
 
     @Override

@@ -77,7 +77,7 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
         // Install the auto install bundles
         for (Deployment dep : deployments) {
             try {
-                XBundleRevision brev = getBundleManager().createBundleRevision(getBundleContext(), dep, serviceTarget);
+                XBundleRevision brev = getBundleManager().installBundleRevision(getBundleContext(), dep, serviceTarget);
                 installedRevisions.add(brev);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
