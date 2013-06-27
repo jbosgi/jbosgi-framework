@@ -30,6 +30,8 @@ import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
+import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * The collection of integration service names.
@@ -37,6 +39,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
+@SuppressWarnings("deprecation")
 public interface IntegrationServices  {
 
 	/** The prefix for all OSGi services */

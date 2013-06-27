@@ -40,23 +40,22 @@ import org.osgi.framework.BundleActivator;
  */
 public interface IntegrationConstants {
 
+    /** The bundle activator attachment key */
+    AttachmentKey<BundleActivator> BUNDLE_ACTIVATOR_KEY = AttachmentKey.create(BundleActivator.class);
+    /** The bundle attachment key */
+    AttachmentKey<BundleInfo> BUNDLE_INFO_KEY = AttachmentKey.create(BundleInfo.class);
     /** The bundle attachment key */
     AttachmentKey<XBundle> BUNDLE_KEY = AttachmentKey.create(XBundle.class);
     /** The bundle revision attachment key */
     AttachmentKey<XBundleRevision> BUNDLE_REVISION_KEY = AttachmentKey.create(XBundleRevision.class);
-    /** The bundle activator attachment key */
-    AttachmentKey<BundleActivator> BUNDLE_ACTIVATOR_KEY = AttachmentKey.create(BundleActivator.class);
     /** The deployment attachment key */
     AttachmentKey<Deployment> DEPLOYMENT_KEY = AttachmentKey.create(Deployment.class);
-    /** The metadata attachment key */
-    AttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = AttachmentKey.create(OSGiMetaData.class);
     /** The Manifest attachment key */
     AttachmentKey<Manifest> MANIFEST_KEY = AttachmentKey.create(Manifest.class);
-    /** The bundle attachment key */
-    AttachmentKey<BundleInfo> BUNDLE_INFO_KEY = AttachmentKey.create(BundleInfo.class);
+    /** The metadata attachment key */
+    AttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = AttachmentKey.create(OSGiMetaData.class);
     /** The storage state attachment key */
     AttachmentKey<StorageState> STORAGE_STATE_KEY = AttachmentKey.create(StorageState.class);
     /** The module identifier attachment key */
     AttachmentKey<ModuleIdentifier> MODULE_IDENTIFIER_KEY = AttachmentKey.create(ModuleIdentifier.class);
-
 }

@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 
 import java.io.IOException;
@@ -73,7 +72,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
             Deployment dep = DeploymentFactory.createDeployment(info);
             OSGiMetaData metadata = info.getOSGiMetadata();
             dep.putAttachment(IntegrationConstants.BUNDLE_INFO_KEY, info);
-            dep.putAttachment(OSGI_METADATA_KEY, metadata);
+            dep.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
             return dep;
         } catch (IllegalArgumentException nfe) {
             throw FrameworkMessages.MESSAGES.invalidNumberFormat(nfe, nfe.getMessage());
@@ -88,7 +87,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
             String symbolicName = metadata.getBundleSymbolicName();
             Version version = metadata.getBundleVersion();
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
-            dep.putAttachment(OSGI_METADATA_KEY, metadata);
+            dep.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
             return dep;
         }
 
@@ -103,7 +102,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
         if (manifest != null && manifest.getMainAttributes().keySet().size() < 2) {
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, null, Version.emptyVersion);
             metadata = OSGiMetaDataBuilder.load(manifest);
-            dep.putAttachment(OSGI_METADATA_KEY, metadata);
+            dep.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
             return dep;
         }
 
@@ -115,7 +114,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
     public OSGiMetaData createOSGiMetaData(Deployment deployment) throws BundleException {
 
         // #1 check if the Deployment already contains a OSGiMetaData
-        OSGiMetaData metadata = deployment.getAttachment(OSGI_METADATA_KEY);
+        OSGiMetaData metadata = deployment.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
         if (metadata != null)
             return metadata;
 
@@ -145,7 +144,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
         if (metadata == null)
             throw MESSAGES.invalidDeployment(deployment);
 
-        deployment.putAttachment(OSGI_METADATA_KEY, metadata);
+        deployment.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
         return metadata;
     }
 

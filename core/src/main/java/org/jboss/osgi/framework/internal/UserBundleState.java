@@ -23,8 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_ACTIVATOR_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -340,7 +338,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         DeploymentProvider deploymentManager = getFrameworkState().getDeploymentProvider();
         Deployment dep = deploymentManager.createDeployment(storageState);
         OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
-        dep.putAttachment(OSGI_METADATA_KEY, metadata);
+        dep.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
         dep.putAttachment(IntegrationConstants.BUNDLE_KEY, this);
         dep.setBundleUpdate(true);
         dep.setAutoStart(false);
@@ -587,7 +585,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         String className = getOSGiMetaData().getBundleActivator();
         if (className != null) {
             try {
-                bundleActivator = getDeployment().getAttachment(BUNDLE_ACTIVATOR_KEY);
+                bundleActivator = getDeployment().getAttachment(IntegrationConstants.BUNDLE_ACTIVATOR_KEY);
                 if (bundleActivator == null) {
                     Object result = loadClass(className).newInstance();
                     if (result instanceof BundleActivator) {

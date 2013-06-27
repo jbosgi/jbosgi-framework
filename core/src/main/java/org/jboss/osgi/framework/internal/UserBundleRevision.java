@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.InternalConstants.MODULE_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_REVISION_KEY;
 
 import java.io.IOException;
 import java.net.URL;
@@ -75,7 +74,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
             putAttachment(MODULE_KEY, module);
         }
 
-        deployment.putAttachment(BUNDLE_REVISION_KEY, this);
+        deployment.putAttachment(IntegrationConstants.BUNDLE_REVISION_KEY, this);
         putAttachment(IntegrationConstants.DEPLOYMENT_KEY, deployment);
     }
 

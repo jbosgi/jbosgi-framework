@@ -24,8 +24,6 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 
 import java.io.IOException;
@@ -33,6 +31,7 @@ import java.io.IOException;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -85,15 +84,15 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
             Deployment dep = deployment;
             RevisionIdentifier revIdentifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
             storageState = createStorageState(dep, revIdentifier);
-            OSGiMetaData metadata = dep.getAttachment(OSGI_METADATA_KEY);
+            OSGiMetaData metadata = dep.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
             bundleRevision = createBundleRevision(dep, storageState, serviceTarget);
             bundleRevision.putAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
-            XBundle bundle = dep.getAttachment(BUNDLE_KEY);
+            XBundle bundle = dep.getAttachment(IntegrationConstants.BUNDLE_KEY);
             if (bundle == null) {
                 bundle = createBundleState(bundleRevision);
-                dep.putAttachment(BUNDLE_KEY, bundle);
+                dep.putAttachment(IntegrationConstants.BUNDLE_KEY, bundle);
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 installBundleRevision(userBundle, bundleRevision);
                 userBundle.initLazyActivation();

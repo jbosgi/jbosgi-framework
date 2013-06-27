@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +80,7 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
         DeploymentProvider deploymentManager = bundleManager.getFrameworkState().getDeploymentProvider();
         Deployment dep = deploymentManager.createDeployment(bundle.getLocation(), rootFile);
         OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
-        dep.putAttachment(OSGI_METADATA_KEY, metadata);
+        dep.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
         dep.putAttachment(IntegrationConstants.BUNDLE_KEY, bundle);
         dep.setAutoStart(false);
 
