@@ -21,8 +21,12 @@
  */
 package org.jboss.osgi.framework.spi;
 
+import java.lang.reflect.Method;
+
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
+import org.jboss.osgi.framework.FrameworkLogger;
+import org.jboss.osgi.framework.internal.Java;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
@@ -36,9 +40,21 @@ import org.osgi.framework.BundleReference;
 public class BundleReferenceClassLoader<T extends XBundle> extends ModuleClassLoader implements BundleReference {
 
     static {
-        try {
-            ClassLoader.registerAsParallelCapable();
-        } catch (Throwable ignored) {
+        if (Java.isCompatible(Java.VERSION_1_7)) {
+        	Boolean registered = Boolean.FALSE;
+        	Throwable regerror = null;
+            try {
+            	// [TODO] remove this reflective hack when the TCK supports 1.7
+                //ClassLoader.registerAsParallelCapable();
+            	Method method = ClassLoader.class.getDeclaredMethod("registerAsParallelCapable", (Class[])null);
+            	method.setAccessible(true);
+            	registered = (Boolean) method.invoke(null, (Object[])null);
+            } catch (Throwable ex) {
+            	regerror = ex;
+            }
+            if (!registered || regerror != null) {
+            	FrameworkLogger.LOGGER.debugf(regerror, "Cannot register as parallel capable");
+            }
         }
     }
 

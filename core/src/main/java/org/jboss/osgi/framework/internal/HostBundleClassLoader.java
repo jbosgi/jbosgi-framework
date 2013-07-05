@@ -22,10 +22,13 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import java.lang.reflect.Method;
+
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.filter.PathFilter;
+import org.jboss.osgi.framework.FrameworkLogger;
 import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
 import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 
@@ -38,9 +41,21 @@ import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 final class HostBundleClassLoader extends BundleReferenceClassLoader<UserBundleState> {
 
     static {
-        try {
-            ClassLoader.registerAsParallelCapable();
-        } catch (Throwable ignored) {
+        if (Java.isCompatible(Java.VERSION_1_7)) {
+        	Boolean registered = Boolean.FALSE;
+        	Throwable regerror = null;
+            try {
+            	// [TODO] remove this reflective hack when the TCK supports 1.7
+                //ClassLoader.registerAsParallelCapable();
+            	Method method = ClassLoader.class.getDeclaredMethod("registerAsParallelCapable", (Class[])null);
+            	method.setAccessible(true);
+            	registered = (Boolean) method.invoke(null, (Object[])null);
+            } catch (Throwable ex) {
+            	regerror = ex;
+            }
+            if (!registered || regerror != null) {
+            	FrameworkLogger.LOGGER.debugf(regerror, "Cannot register as parallel capable");
+            }
         }
     }
     

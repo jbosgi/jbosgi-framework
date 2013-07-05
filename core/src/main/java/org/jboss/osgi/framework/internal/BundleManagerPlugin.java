@@ -671,7 +671,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
         LockableItem[] items = null;
         switch (method) {
-            case RESOLVE:
+        	case INSTALL:
+        		// do nothing
+        		break;
+        	case RESOLVE:
             case UPDATE:
             case REFRESH:
             case UNINSTALL:
