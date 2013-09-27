@@ -253,6 +253,15 @@
         </pluginManagement>
     </build>
     
+    <!-- Repositories -->
+    <repositories>
+        <repository>
+            <id>jboss-public-repository-group</id>
+            <name>JBoss Public Maven Repository Group</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+        </repository>
+    </repositories>
+    
     <!-- Profiles -->
     <profiles>
         <!-- Name: all Desc: Build the aggregated framework jar -->
