@@ -154,7 +154,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
         RevisionContent rootContent = new RevisionContent(this, metadata, bundleId, 0, rootFile);
 
         // Setup single root file list, if there is no Bundle-ClassPath
-        if (metadata.getBundleClassPath() == null) {
+        if (metadata.getBundleClassPath().isEmpty()) {
             bundleClassPath.add(rootContent);
             return rootContent;
         }

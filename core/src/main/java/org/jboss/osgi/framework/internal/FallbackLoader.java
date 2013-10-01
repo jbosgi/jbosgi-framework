@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -398,6 +399,16 @@ final class FallbackLoader implements LocalLoader {
         String resName = context.resName;
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
         URL resURL = brev.getEntry(resName);
+        if (resURL == null) {
+            UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
+            Iterator<String> itpaths = userRev.getOSGiMetaData().getBundleClassPath().iterator();
+            while (resURL == null && itpaths.hasNext()) {
+                String path = itpaths.next();
+                if (!path.contains("*") && !path.endsWith(".jar")) {
+                    resURL = brev.getEntry(path + "/" + resName);
+                }
+            }
+        }
         if (resURL == null) {
             return null;
         }

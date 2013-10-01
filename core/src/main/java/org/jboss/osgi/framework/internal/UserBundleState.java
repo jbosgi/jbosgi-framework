@@ -733,7 +733,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // The service platform may run this bundle if any of the execution environments named in the
         // Bundle-RequiredExecutionEnvironment header matches one of the execution environments it implements.
         List<String> requiredEnvs = getOSGiMetaData().getRequiredExecutionEnvironment();
-        if (requiredEnvs != null) {
+        if (requiredEnvs.isEmpty() == false) {
             boolean foundSupportedEnv = false;
             String frameworkEnvProp = (String) getBundleManager().getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT);
             List<String> availableEnvs = Arrays.asList(frameworkEnvProp.split("[,\\s]+"));

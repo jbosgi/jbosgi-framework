@@ -160,7 +160,7 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
 
     // Process the Bundle-NativeCode header if there is one
     private void processNativeCode(R bundleRevision, OSGiMetaData metadata, Deployment dep) {
-        if (metadata.getBundleNativeCode() != null) {
+        if (metadata.getBundleNativeCode().isEmpty() == false) {
             NativeCode nativeCodePlugin = frameworkState.getNativeCode();
             nativeCodePlugin.deployNativeCode(dep);
         }

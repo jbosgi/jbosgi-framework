@@ -40,8 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
@@ -80,7 +78,6 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
     private final BundleManagerPlugin bundleManager;
     private final ExecutorService executorService;
-    private final LockManager lockManager;
 
     /** The bundleState listeners */
     private final Map<XBundle, List<BundleListenerRegistration>> bundleListeners = new ConcurrentHashMap<XBundle, List<BundleListenerRegistration>>();
@@ -94,10 +91,9 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
 
-    FrameworkEventsImpl(BundleManagerPlugin bundleManager, ExecutorService executorService, LockManager lockManager) {
+    FrameworkEventsImpl(BundleManagerPlugin bundleManager, ExecutorService executorService) {
         this.bundleManager = bundleManager;
         this.executorService = executorService;
-        this.lockManager = lockManager;
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
         asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
         asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
@@ -385,9 +381,6 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         if (registrations.isEmpty())
             return;
 
-        // Sanity check that we are not holding a lock
-        LockContext currentLock = lockManager.getCurrentLockContext();
-
         // Synchronous listeners first
         iterator = registrations.iterator();
         while (iterator.hasNext()) {
@@ -395,10 +388,6 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             BundleListener listener = blreg.listener;
             try {
                 if (listener instanceof SynchronousBundleListener) {
-                    if (currentLock != null) {
-                        // This has the potential for deadlock!
-                        LOGGER.debugf("Calling out to client code with current lock: %s", currentLock);
-                    }
                     iterator.remove();
                     listener.bundleChanged(event);
                 }

@@ -83,15 +83,15 @@ final class HostBundleRevision extends UserBundleRevision {
 
     void attachFragment(FragmentBundleRevision fragRev) {
         if (attachedFragments == null) {
-        	Comparator<FragmentBundleRevision> comp = new Comparator<FragmentBundleRevision>(){
-				@Override
-				public int compare(FragmentBundleRevision rev1, FragmentBundleRevision rev2) {
-					Bundle b1 = rev1.getBundle();
-					Bundle b2 = rev2.getBundle();
-					return (int)(b1.getBundleId() - b2.getBundleId());
-				}
+            Comparator<FragmentBundleRevision> comp = new Comparator<FragmentBundleRevision>(){
+                @Override
+                public int compare(FragmentBundleRevision rev1, FragmentBundleRevision rev2) {
+                    Bundle b1 = rev1.getBundle();
+                    Bundle b2 = rev2.getBundle();
+                    return (int)(b1.getBundleId() - b2.getBundleId());
+                }
 
-        	};
+            };
             attachedFragments = new TreeSet<FragmentBundleRevision>(comp);
         }
         attachedFragments.add(fragRev);
@@ -137,6 +137,8 @@ final class HostBundleRevision extends UserBundleRevision {
 
     @Override
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
+        getBundleState().assertNotUninstalled();
+
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         getBundleState().ensureResolved(true);
         return findResolvedEntries(path, pattern, recurse);

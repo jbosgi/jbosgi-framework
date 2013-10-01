@@ -66,59 +66,53 @@ final class BundleRevisionValidatorR4 implements BundleRevisionValidator {
         // Multiple imports of a given package.
         // Specification-version and version specified together (for the same package(s)) but with different values
         List<PackageAttribute> importPackages = metadata.getImportPackages();
-        if (importPackages != null) {
-            Set<String> packages = new HashSet<String>();
-            for (PackageAttribute packageAttribute : importPackages) {
-                String packageName = packageAttribute.getAttribute();
-                if (packages.contains(packageName))
-                    throw MESSAGES.duplicatePackageImport(packageName, brev);
-                packages.add(packageName);
+        Set<String> packages = new HashSet<String>();
+        for (PackageAttribute packageAttribute : importPackages) {
+            String packageName = packageAttribute.getAttribute();
+            if (packages.contains(packageName))
+                throw MESSAGES.duplicatePackageImport(packageName, brev);
+            packages.add(packageName);
 
-                if (packageName.startsWith("java."))
-                    throw MESSAGES.notAllowdToImportJavaPackage(brev);
+            if (packageName.startsWith("java."))
+                throw MESSAGES.notAllowdToImportJavaPackage(brev);
 
-                String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
-                String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
-                if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
-            }
+            String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
+            String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
+            if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
+                throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
         }
 
         // Export or import of java.*.
         // Specification-version and version specified together (for the same package(s)) but with different values
         // The export statement must not specify an explicit bundle symbolic name nor bundle version
         List<PackageAttribute> exportPackages = metadata.getExportPackages();
-        if (exportPackages != null) {
-            for (PackageAttribute packageAttr : exportPackages) {
-                String packageName = packageAttr.getAttribute();
-                if (packageName.startsWith("java."))
-                    throw MESSAGES.notAllowdToExportJavaPackage(brev);
+        for (PackageAttribute packageAttr : exportPackages) {
+            String packageName = packageAttr.getAttribute();
+            if (packageName.startsWith("java."))
+                throw MESSAGES.notAllowdToExportJavaPackage(brev);
 
-                String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
-                String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
-                if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
+            String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
+            String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+            if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
+                throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
 
-                String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
-                if (symbolicNameAttr != null)
-                    throw MESSAGES.packageCannotSpecifyBundleSymbolicName(packageName, brev);
+            String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
+            if (symbolicNameAttr != null)
+                throw MESSAGES.packageCannotSpecifyBundleSymbolicName(packageName, brev);
 
-                String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
-                if (bundleVersionAttr != null)
-                    throw MESSAGES.packageCannotSpecifyBundleVersion(packageName, brev);
-            }
+            String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
+            if (bundleVersionAttr != null)
+                throw MESSAGES.packageCannotSpecifyBundleVersion(packageName, brev);
         }
 
         // A bundle with a dynamic imported package having different values for version and specification-version attributes must fail to install
         List<PackageAttribute> dynamicImports = metadata.getDynamicImports();
-        if (dynamicImports != null) {
-            for (PackageAttribute packageAttr : dynamicImports) {
-                String packageName = packageAttr.getAttribute();
-                String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
-                String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
-                if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
-            }
+        for (PackageAttribute packageAttr : dynamicImports) {
+            String packageName = packageAttr.getAttribute();
+            String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
+            String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+            if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
+                throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
         }
 
         // Verify Fragment-Host header

@@ -26,11 +26,9 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.spi.ExecutorServicePlugin;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.LockManager;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
@@ -47,8 +45,6 @@ import org.osgi.framework.ServiceListener;
  */
 final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents> {
 
-    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
-
     FrameworkEventsPlugin() {
         super(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, "Framework Events Thread");
     }
@@ -56,14 +52,12 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents>
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkEvents> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
     protected FrameworkEvents createServiceValue(StartContext startContext) throws StartException {
-        LockManager lockManager = injectedLockManager.getValue();
-        return new FrameworkEventsImpl((BundleManagerPlugin) getBundleManager(), getExecutorService(), lockManager);
+        return new FrameworkEventsImpl((BundleManagerPlugin) getBundleManager(), getExecutorService());
     }
 
     @Override

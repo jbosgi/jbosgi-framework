@@ -142,7 +142,7 @@ public final class NativeCodeImpl implements NativeCode {
         UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
         OSGiMetaData metaData = userRev.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
         List<ParameterizedAttribute> params = metaData.getBundleNativeCode();
-        if (params == null)
+        if (params.isEmpty())
             throw MESSAGES.cannotFindNativeCodeHeader(userRev);
 
         // Find the matching parameters
