@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
@@ -91,6 +90,14 @@ final class PersistentBundlesInstallPlugin extends BootstrapBundlesInstall<Void>
                 deployments.add(dep);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
+            }
+        }
+
+        // Log the deployemnts
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debugf("Deployments for persistent bundles");
+            for (Deployment dep : deployments) {
+                LOGGER.debugf(" %s", dep);
             }
         }
 

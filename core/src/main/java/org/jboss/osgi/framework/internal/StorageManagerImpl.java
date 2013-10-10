@@ -28,11 +28,11 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.StartLevelManager;
@@ -47,15 +47,27 @@ import org.osgi.framework.Constants;
  *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
+ *
+ * @ThreadSafe
  */
 public final class StorageManagerImpl implements StorageManager {
 
     private final BundleManagerPlugin bundleManager;
-    private final Map<String, StorageState> storageStates = new HashMap<String, StorageState>();
-    private File storageArea;
+    private final Map<String, StorageState> storageStates = new ConcurrentHashMap<String, StorageState>();
+    private final File storageArea;
 
     public StorageManagerImpl(BundleManager bundleManager) {
         this.bundleManager = (BundleManagerPlugin) bundleManager;
+        String dirName = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE);
+        if (dirName == null) {
+            try {
+                File storageDir = new File("./osgi-store");
+                dirName = storageDir.getCanonicalPath();
+            } catch (IOException ex) {
+                throw MESSAGES.illegalStateCannotCreateStorageArea(ex);
+            }
+        }
+        this.storageArea = new File(dirName).getAbsoluteFile();
     }
 
     @Override
@@ -87,7 +99,7 @@ public final class StorageManagerImpl implements StorageManager {
     }
 
     @Override
-    public StorageState createStorageState(long bundleId, String location, Integer initialStartlevel, VirtualFile rootFile) throws IOException {
+    public synchronized StorageState createStorageState(long bundleId, String location, Integer initialStartlevel, VirtualFile rootFile) throws IOException {
         assert location != null : "Null location";
 
         int startlevel;
@@ -112,22 +124,18 @@ public final class StorageManagerImpl implements StorageManager {
         props.put(StorageState.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
 
         StorageState storageState = StorageState.createStorageState(bundleDir, rootFile, props);
-        synchronized (storageStates) {
-            if (storageState.getBundleId() != 0) {
-                storageStates.put(storageState.getLocation(), storageState);
-            }
+        if (storageState.getBundleId() != 0) {
+            storageStates.put(storageState.getLocation(), storageState);
         }
         return storageState;
     }
 
     @Override
-    public void deleteStorageState(StorageState storageState) {
+    public synchronized void deleteStorageState(StorageState storageState) {
         LOGGER.debugf("Deleting storage state: %s", storageState);
         VFSUtils.safeClose(storageState.getRootFile());
         deleteRecursive(storageState.getStorageDir());
-        synchronized (storageStates) {
-            storageStates.remove(storageState.getLocation());
-        }
+        storageStates.remove(storageState.getLocation());
     }
 
     @Override
@@ -157,18 +165,6 @@ public final class StorageManagerImpl implements StorageManager {
 
     @Override
     public File getStorageArea() {
-        if (storageArea == null) {
-            String dirName = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE);
-            if (dirName == null) {
-                try {
-                    File storageDir = new File("./osgi-store");
-                    dirName = storageDir.getCanonicalPath();
-                } catch (IOException ex) {
-                    throw MESSAGES.illegalStateCannotCreateStorageArea(ex);
-                }
-            }
-            storageArea = new File(dirName).getAbsoluteFile();
-        }
         return storageArea;
     }
 
