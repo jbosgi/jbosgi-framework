@@ -34,6 +34,12 @@ import org.osgi.framework.BundleReference;
  */
 public class BundleReferenceClassLoader<T extends Bundle> extends ModuleClassLoader implements BundleReference {
 
+    static {
+        try {
+            ClassLoader.registerAsParallelCapable();
+        } catch (Throwable ignored) {}
+    }
+
     private final T bundle;
 
     public BundleReferenceClassLoader(Configuration configuration, T bundle) {
