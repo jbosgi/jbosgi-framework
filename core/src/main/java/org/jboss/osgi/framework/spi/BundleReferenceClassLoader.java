@@ -26,6 +26,8 @@ import org.jboss.modules.ModuleClassLoaderFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
+import java.lang.reflect.Method;
+
 /**
  * A {@link ModuleClassLoader} that holds a reference to the underlying bundle.
  *
@@ -33,6 +35,14 @@ import org.osgi.framework.BundleReference;
  * @since 16-Dec-2010
  */
 public class BundleReferenceClassLoader<T extends Bundle> extends ModuleClassLoader implements BundleReference {
+
+    static {
+        try {
+            Method m = ClassLoader.class.getDeclaredMethod("registerAsParallelCapable");
+            m.setAccessible(true);
+            m.invoke(null);
+        } catch (Throwable ignored) {}
+    }
 
     private final T bundle;
 
