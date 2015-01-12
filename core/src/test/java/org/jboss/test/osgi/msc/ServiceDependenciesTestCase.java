@@ -23,7 +23,7 @@ package org.jboss.test.osgi.msc;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;

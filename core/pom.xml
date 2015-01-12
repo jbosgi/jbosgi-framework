@@ -28,13 +28,14 @@
 	-Djava.util.logging.manager=org.jboss.logmanager.LogManager 
 	-Djboss.osgi.vfs.leakDebugging=true 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>3.0.4.Final-SNAPSHOT</version>
+        <version>3.0.4.Final</version>
     </parent>
 
     <name>JBossOSGi Framework Core</name>
@@ -114,37 +115,10 @@
     <!-- Build -->
     <build>
         <plugins>
-        	<!--  
-			<plugin>
-			    <artifactId>maven-compiler-plugin</artifactId>
-			    <configuration>
-			        <source>1.7</source>
-			        <target>1.7</target>
-			    </configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>enforce-java</id>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<requireJavaVersion>
-									<version>[1.7,)</version>
-								</requireJavaVersion>
-							</rules>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			-->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-					<argLine>${surefire.system.args}</argLine>
+                    <argLine>${surefire.system.args}</argLine>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -155,12 +129,16 @@
                 <executions>
                     <execution>
                         <id>default-test</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <phase>none</phase>
                     </execution>
                     <execution>
                         <id>setA</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <configuration>
                             <excludes>
                                 <exclude>**/URLHandlerTestCase.java</exclude>
@@ -169,7 +147,9 @@
                     </execution>
                     <execution>
                         <id>setB</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <configuration>
                             <includes>
                                 <include>**/URLHandlerTestCase.java</include>

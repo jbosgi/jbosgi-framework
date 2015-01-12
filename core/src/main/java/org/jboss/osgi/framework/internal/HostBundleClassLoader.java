@@ -33,7 +33,7 @@ import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
 import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 
 /**
- * A {@link ModuleClassLoader} that hosld a reference to the underlying bundle.
+ * A {@link ModuleClassLoader} that holds a reference to the underlying bundle.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Dec-2010

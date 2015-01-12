@@ -23,7 +23,7 @@ package org.jboss.test.osgi.framework.classloader;
 
 import java.io.InputStream;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.resolver.XBundle;

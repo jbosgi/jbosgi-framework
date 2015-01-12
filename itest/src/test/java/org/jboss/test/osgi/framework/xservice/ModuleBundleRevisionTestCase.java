@@ -23,7 +23,7 @@ package org.jboss.test.osgi.framework.xservice;
 
 import java.util.List;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;

@@ -80,7 +80,9 @@ public final class StorageManagerImpl implements StorageManager {
             for (File storageDir : storageDirs) {
                 StorageState storageState = StorageState.createStorageState(storageDir);
                 if (storageState.getBundleId() != 0) {
-                    storageStates.put(storageState.getLocation(), storageState);
+                    synchronized (storageStates) {
+                        storageStates.put(storageState.getLocation(), storageState);
+                    }
                 }
             }
         }
@@ -132,12 +134,19 @@ public final class StorageManagerImpl implements StorageManager {
 
     @Override
     public Set<StorageState> getStorageStates() {
-        return Collections.unmodifiableSet(new HashSet<StorageState>(storageStates.values()));
+        synchronized (storageStates) {
+            return Collections.unmodifiableSet(new HashSet<StorageState>(storageStates.values()));
+        }
     }
 
     @Override
     public StorageState getStorageState(String location) {
-        return location != null ? storageStates.get(location) : null;
+        if (location == null) {
+            return null;
+        }
+        synchronized (storageStates) {
+            return storageStates.get(location);
+        }
     }
 
     @Override
