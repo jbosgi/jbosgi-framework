@@ -35,7 +35,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>3.0.4.Final</version>
+        <version>3.0.5.Final-SNAPSHOT</version>
     </parent>
 
     <name>JBossOSGi Framework Core</name>
