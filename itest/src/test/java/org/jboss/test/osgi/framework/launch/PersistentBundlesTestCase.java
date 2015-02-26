@@ -174,6 +174,10 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         bundleA = bundles[0].getBundleId() > 0 ? bundles[0] : bundles[1];
         Assert.assertEquals("Bundle Id", 2, bundleA.getBundleId());
         assertBundleState(Bundle.INSTALLED, bundleA.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
     }
 
     @Test

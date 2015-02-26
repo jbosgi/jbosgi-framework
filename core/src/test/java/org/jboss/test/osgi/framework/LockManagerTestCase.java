@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.jboss.osgi.framework.internal.LockManagerImpl;
 import org.jboss.osgi.framework.spi.LockException;
