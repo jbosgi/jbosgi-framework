@@ -70,7 +70,7 @@ public class NativeCodePermissionsTestCase extends OSGiFrameworkTest {
             assertFalse("Precondition", tempFile.exists());
             Bundle bundle = framework.getBundleContext().installBundle(getTestArchivePath("simple-nativecode.jar"));
             bundle.start();
-            assertTrue(tempFile.exists());
+            assertTrue(tempFile.toString() + " does not exist", tempFile.exists());
 
             framework.stop();
             framework.waitForStop(2000);
