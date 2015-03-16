@@ -37,7 +37,7 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>3.0.4.Final</version>
+    <version>3.0.4.Final-SNAPSHOT</version>
 
     <!-- Source Control -->
     <scm>
@@ -109,7 +109,7 @@
                 <artifactId>jbosgi-vfs30</artifactId>
                 <version>${version.jboss.osgi.vfs}</version>
             </dependency>
-            
+
             <!-- Test dependencies -->
             <dependency>
                 <groupId>javax.inject</groupId>
@@ -187,7 +187,7 @@
             </plugins>
         </pluginManagement>
     </build>
-    
+
     <!-- Repositories -->
     <repositories>
         <repository>
@@ -196,7 +196,7 @@
             <url>https://repository.jboss.org/nexus/content/groups/public/</url>
         </repository>
     </repositories>
-    
+
     <!-- Profiles -->
     <profiles>
         <!-- Name: all Desc: Build the aggregated framework jar -->
