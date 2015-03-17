@@ -61,7 +61,7 @@ public class NativeCodePermissionsTestCase extends OSGiFrameworkTest {
             props.put("org.osgi.framework.storage.clean", "onFirstInit");
 
             // Execute this command for every native library found in the bundle
-            props.put("org.osgi.framework.command.execpermission", "cp ${abspath} " + tempFileName);
+            props.put("org.osgi.framework.command.execpermission", "cp '${abspath}' '" + tempFileName + "'");
 
             FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
             Framework framework = factory.newFramework(props);
