@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.HashSet;
 
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -99,12 +100,20 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetEntryPaths() throws Exception {
+        final HashSet<String> testUrls = new HashSet<String>();
+        testUrls.add("org/");
+        testUrls.add("META-INF/");
+        Object el = null;
+        int testUrlsSize = testUrls.size();
         Bundle bundle = installBundle(getBundleA());
         try {
             Enumeration<?> urls = bundle.getEntryPaths("/");
-            assertEquals("org/", urls.nextElement());
-            assertEquals("META-INF/", urls.nextElement());
-            assertFalse(urls.hasMoreElements());
+
+            for (int i = 0; i < testUrlsSize; i++) {
+                el = urls.nextElement();
+                assertTrue("unexpected url [" + el + "]", testUrls.remove(el));
+            }
+            assertFalse("returned unexpected number of urls", urls.hasMoreElements());
 
             // Entry access should not resolve the bundle
             assertBundleState(Bundle.INSTALLED, bundle.getState());

@@ -30,7 +30,8 @@
   -Djboss.osgi.vfs.leakDebugging=true
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -54,7 +55,19 @@
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.enterprise</artifactId>
         </dependency>
-
+        <!-- SLF4J -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>javax.inject</groupId>
@@ -63,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
-            <artifactId>arquillian-osgi-embedded</artifactId>
+            <artifactId>arquillian-container-jbosgi-embedded</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -94,30 +107,30 @@
     </dependencies>
 
     <!-- Build -->
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>build-test-jars</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<tasks>
-								<property name="maven.runtime.classpath" refid="maven.runtime.classpath" />
-								<property name="tests.output.dir" value="${project.build.directory}" />
-								<ant antfile="scripts/antrun-test-jars.xml" />
-							</tasks>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<executions>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>build-test-jars</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <property name="maven.runtime.classpath" refid="maven.runtime.classpath" />
+                                <property name="tests.output.dir" value="${project.build.directory}" />
+                                <ant antfile="scripts/antrun-test-jars.xml" />
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
                     <execution>
                         <id>modules</id>
                         <phase>test-compile</phase>
@@ -133,30 +146,34 @@
                             </descriptors>
                         </configuration>
                     </execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>${surefire.system.args}</argLine>
-					<systemPropertyVariables>
-						<java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-						<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-						<jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
-						<jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>${surefire.system.args}</argLine>
+                    <systemPropertyVariables>
+                        <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
+                        <jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
                         <module.path>${project.build.directory}/test-modules</module.path>
-						<test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
-					</systemPropertyVariables>
-				</configuration>
+                        <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
+                    </systemPropertyVariables>
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-test</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <phase>none</phase>
                     </execution>
                     <execution>
                         <id>setA</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <configuration>
                             <excludes>
                                 <exclude>**/integration/*TestCase.java</exclude>
@@ -165,7 +182,9 @@
                     </execution>
                     <execution>
                         <id>setB</id>
-                        <goals><goal>test</goal></goals>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
                         <configuration>
                             <includes>
                                 <include>**/integration/*TestCase.java</include>
@@ -173,9 +192,9 @@
                         </configuration>
                     </execution>
                 </executions>
-			</plugin>
-		</plugins>
-	</build>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <!--

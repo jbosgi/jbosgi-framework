@@ -38,6 +38,7 @@ package org.jboss.osgi.framework.internal;
  * <li><tt>java.lang.Enum</tt> was introduced in JDK 1.5</li>
  * <li><tt>java.lang.management.LockInfo</tt> was introduced in JDK 1.6</li>
  * <li><tt>java.nio.file</tt> was introduced in JDK 1.7</li>
+ * <li><tt>java.util.stream.Collectors</tt> was introduced in JDK 1.8</li>
  * </ol>
  * </p>
  *
@@ -59,6 +60,7 @@ public final class Java {
     public static final int VERSION_1_5 = 0x06;
     public static final int VERSION_1_6 = 0x07;
     public static final int VERSION_1_7 = 0x08;
+    public static final int VERSION_1_8 = 0x09;
 
     /**
      * Private to avoid over optimization by the compiler.
@@ -100,6 +102,9 @@ public final class Java {
             // check for 1.7
             Class.forName("java.nio.file.FileStore");
             version = VERSION_1_7;
+
+            Class.forName("java.util.stream.Collectors");
+            version = VERSION_1_8;
         } catch (ClassNotFoundException ignore) {
         }
         VERSION = version;

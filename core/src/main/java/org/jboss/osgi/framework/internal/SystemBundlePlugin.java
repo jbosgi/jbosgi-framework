@@ -194,6 +194,9 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
             if (Java.isCompatible(Java.VERSION_1_7)) {
                 vlist += ",1.7";
             }
+            if (Java.isCompatible(Java.VERSION_1_8)) {
+                vlist += ",1.8";
+            }
             capspec += vlist.substring(1) + "\"";
             builder.addProvidedCapabilities(capspec);
         }
