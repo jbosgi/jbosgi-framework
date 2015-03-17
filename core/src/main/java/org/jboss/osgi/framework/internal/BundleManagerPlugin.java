@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -361,8 +362,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public Map<String, Object> getProperties() {
         Map<String, Object> m = new HashMap<String, Object>();
-        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
-            m.put(entry.getKey().toString(), entry.getValue());
+        Properties sysProperties = System.getProperties();
+        synchronized (sysProperties) {
+            for (Map.Entry<Object, Object> entry : sysProperties.entrySet()) {
+                m.put(entry.getKey().toString(), entry.getValue());
+            }
         }
         m.putAll(properties);
         return m;
