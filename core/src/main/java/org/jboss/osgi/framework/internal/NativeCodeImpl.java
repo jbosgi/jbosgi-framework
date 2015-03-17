@@ -370,11 +370,16 @@ public final class NativeCodeImpl implements NativeCode {
             if (idx >= 0) {
                 command.replace(idx, idx + ABSPATH_VARIABLE.length(), libraryFile.getAbsolutePath());
             }
-            Process process = Runtime.getRuntime().exec(command.toString());
+            String commandString = command.toString();
+            Process process = Runtime.getRuntime().exec(commandString);
             try {
                 process.waitFor();
             } catch (InterruptedException e) {
                 // Move ahead when interrupted
+            }
+            int exitCode = process.exitValue();
+            if(exitCode != 0) {
+                throw new IOException("FRAMEWORK_EXECPERMISSION '" + commandString + "' exited with " + exitCode);
             }
         }
 
