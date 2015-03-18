@@ -122,6 +122,7 @@
     <modules>
         <module>core</module>
         <module>itest</module>
+        <module>aggregated</module>
     </modules>
 
     <build>
