@@ -247,10 +247,12 @@ public final class NativeCodeImpl implements NativeCode {
                 osmatch = osname.equalsIgnoreCase(fwOSName);
                 if(!osmatch) {
                     String [] canonicalNames = osAlias.get(fwOSName);
-                    for(String canonicalName : canonicalNames) {
-                        osmatch = osname.equalsIgnoreCase(canonicalName);
-                        if(osmatch) {
-                            break;
+                    if (canonicalNames != null) {
+                        for (String canonicalName : canonicalNames) {
+                            osmatch = osname.equalsIgnoreCase(canonicalName);
+                            if (osmatch) {
+                                break;
+                            }
                         }
                     }
                 }
