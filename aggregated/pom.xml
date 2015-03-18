@@ -67,6 +67,22 @@
 
     <!-- Build -->
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>META-INF/MANIFEST.MF</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -81,7 +97,7 @@
                                 <descriptor>scripts/assembly.xml</descriptor>
                             </descriptors>
                             <archive>
-                                <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                             </archive>
                         </configuration>
                     </execution>
