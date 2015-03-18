@@ -82,7 +82,6 @@ public class AggregatedFrameworkLaunchTestCase {
         opts.add(cp);
         opts.add(FrameworkFactoryImpl.class.getName());
 
-        System.out.println(Arrays.toString(opts.toArray()));
         Process proc = new ProcessBuilder(opts).start();
         File logfile = new File("./target/test.log");
         for (int i = 0; i < 30; i++) {
