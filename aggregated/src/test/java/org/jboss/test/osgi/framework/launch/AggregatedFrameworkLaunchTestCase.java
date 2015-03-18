@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.jboss.osgi.framework.internal.FrameworkFactoryImpl;
@@ -67,15 +68,31 @@ public class AggregatedFrameworkLaunchTestCase {
         assertTrue("File exists: " + logConfig, logConfig.exists());
 
         // Run the java command
-        String logopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dlogging.configuration=" + logConfig.toURI();
-        String javaopts = logopts + " -Dorg.osgi.framework.storage=target/osgi-store";
+        File javaHome = new File(System.getProperty("java.home"));
+        if ("jre".equals(javaHome.getName())) {
+            javaHome = javaHome.getParentFile();
+        }
+        ArrayList<String> opts = new ArrayList<>();
+        opts.add(new File(javaHome, "bin/java").getAbsolutePath());
+        opts.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+        opts.add("-Dlogging.configuration=" + logConfig.toURI());
+        opts.add("-Dorg.osgi.framework.storage=target/osgi-store");
         //javaopts += " -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y";
-        String cmd = "java " + javaopts + " -cp " + cp + " " + FrameworkFactoryImpl.class.getName();
-        Process proc = Runtime.getRuntime().exec(cmd);
-        Thread.sleep(3000);
+        opts.add("-cp");
+        opts.add(cp);
+        opts.add(FrameworkFactoryImpl.class.getName());
+
+        System.out.println(Arrays.toString(opts.toArray()));
+        Process proc = new ProcessBuilder(opts).start();
+        File logfile = new File("./target/test.log");
+        for (int i = 0; i < 30; i++) {
+            if (logfile.exists()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
         proc.destroy();
 
-        File logfile = new File("./target/test.log");
         assertTrue("Logfile exists: " + logfile, logfile.exists());
     }
 }
