@@ -79,44 +79,69 @@ public final class NativeCodeImpl implements NativeCode {
     /** Maps an alias to an OSGi processor name */
     private static Map<String, String> processorAlias = new HashMap<String, String>();
     static {
-        processorAlias.put("amd64", "x86-64");
-        processorAlias.put("em64t", "x86-64");
+        // http://www.osgi.org/Specifications/Reference#processor
+        processorAlias.put("psc1k", "ignite");
+        processorAlias.put("power", "PowerPC");
+        processorAlias.put("ppc", "PowerPC");
+        processorAlias.put("ppc64", "PowerPC-64");
+        processorAlias.put("ppc64le", "PowerPC-64-LE");
+        processorAlias.put("pentium", "x86");
         processorAlias.put("i386", "x86");
         processorAlias.put("i486", "x86");
         processorAlias.put("i586", "x86");
         processorAlias.put("i686", "x86");
-        processorAlias.put("pentium", "x86");
+        processorAlias.put("amd64", "x86-64");
+        processorAlias.put("em64t", "x86-64");
         processorAlias.put("x86_64", "x86-64");
     }
 
     /** Maps an alias to an OSGi osname */
-    private static Map<String, String> osAlias = new HashMap<String, String>();
+    private static Map<String, String []> osAlias = new HashMap<String, String []>();
     static {
-        osAlias.put("hp-ux", "HPUX");
-        osAlias.put("Mac OS", "MacOS");
-        osAlias.put("Mac OS X", "MacOSX");
-        osAlias.put("OS/2", "OS2");
-        osAlias.put("procnto", "QNX");
-        osAlias.put("SymbianOS", "Epoc32");
-        osAlias.put("Win2000", "Windows2000");
-        osAlias.put("Win2003", "Windows2003");
-        osAlias.put("Win32", "Windows");
-        osAlias.put("Win95", "Windows95");
-        osAlias.put("Win98", "Windows98");
-        osAlias.put("WinCE", "WindowsCE");
-        osAlias.put("Windows 2000", "Windows2000");
-        osAlias.put("Windows 2003", "Windows2003");
-        osAlias.put("Windows 7", "Windows7");
-        osAlias.put("Windows 95", "Windows95");
-        osAlias.put("Windows 98", "Windows98");
-        osAlias.put("Windows CE", "WindowsCE");
-        osAlias.put("Windows NT", "WindowsNT");
-        osAlias.put("Windows Server 2003", "Windows2003");
-        osAlias.put("Windows Vista", "WindowsVista");
-        osAlias.put("Windows XP", "WindowsXP");
-        osAlias.put("WinNT", "WindowsNT");
-        osAlias.put("WinVista", "WindowsVista");
-        osAlias.put("WinXP", "WindowsXP");
+        // http://www.osgi.org/Specifications/Reference#os
+        osAlias.put("SymbianOS", new String[] { "Epoc32" });
+        osAlias.put("hp-ux", new String[] { "HPUX" });
+        osAlias.put("Mac OS", new String[] { "MacOS" });
+        osAlias.put("Mac OS X", new String[] { "MacOSX" });
+        osAlias.put("OS/2", new String[] { "OS2" });
+        osAlias.put("procnto", new String[] { "QNX" });
+
+        osAlias.put("Windows 95", new String[] { "Windows95" });
+        osAlias.put("Win95", new String[] { "Windows95" });
+
+        osAlias.put("Windows 98", new String[] { "Windows98" });
+        osAlias.put("Win98", new String[] { "Windows98" });
+
+        osAlias.put("Windows NT", new String[] { "WindowsNT" });
+        osAlias.put("WinNT", new String[] { "WindowsNT" });
+
+        osAlias.put("Windows CE", new String[] { "WindowsCE" });
+        osAlias.put("WinCE", new String[] { "WindowsCE" });
+
+        osAlias.put("Windows 2000", new String[] { "Windows2000" });
+        osAlias.put("Win2000", new String[] { "Windows2000" });
+
+        osAlias.put("Windows XP", new String[] { "WindowsXP" });
+        osAlias.put("WinXP", new String[] { "WindowsXP" });
+
+        osAlias.put("Windows 2003", new String[] { "Windows2003" });
+        osAlias.put("Win2003", new String[] { "Windows2003" });
+        osAlias.put("Windows Server 2003", new String[] { "Windows2003" });
+
+        osAlias.put("Windows Vista", new String[] { "WindowsVista" });
+        osAlias.put("WinVista", new String[] { "WindowsVista" });
+
+        osAlias.put("Windows 7", new String[] { "Windows7" });
+        osAlias.put("Win7", new String[] { "Windows7" });
+
+        osAlias.put("Windows 8", new String[] { "Windows8" });
+        osAlias.put("Win8", new String[] { "Windows8" });
+
+        osAlias.put("Windows Server 2008", new String[] { "WindowsServer2008" });
+        osAlias.put("Windows Server 2012", new String[] { "WindowsServer2012" });
+
+        osAlias.put("Win32", new String[] { "Windows95", "Windows98", "WindowsNT", "WindowsCE", "Windows2000", "WindowsXP",
+                "Windows2003", "WindowsVista", "Windows7", "Windows8", "WindowsServer2008", "WindowsServer2012" });
     }
 
     private final BundleManagerPlugin bundleManager;
@@ -219,9 +244,21 @@ public final class NativeCodeImpl implements NativeCode {
             boolean osmatch = false;
             Collection<String> osNames = getCollection(osnameParam.getValue(), true);
             for (String osname : osNames) {
-                osmatch = (osname.equalsIgnoreCase(fwOSName) || osname.equalsIgnoreCase(osAlias.get(fwOSName)));
-                if (osmatch == true)
+                osmatch = osname.equalsIgnoreCase(fwOSName);
+                if(!osmatch) {
+                    String [] canonicalNames = osAlias.get(fwOSName);
+                    if (canonicalNames != null) {
+                        for (String canonicalName : canonicalNames) {
+                            osmatch = osname.equalsIgnoreCase(canonicalName);
+                            if (osmatch) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (osmatch) {
                     break;
+                }
             }
 
             match &= osmatch;
