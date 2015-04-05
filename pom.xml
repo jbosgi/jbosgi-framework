@@ -48,6 +48,8 @@
 
     <!-- Properties -->
     <properties>
+        <version.jboss.arquillian.osgi>2.1.0.CR18</version.jboss.arquillian.osgi>
+
         <version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
         <version.javax.inject>1</version.javax.inject>
         <version.jboss.msc>1.2.2.Final</version.jboss.msc>
