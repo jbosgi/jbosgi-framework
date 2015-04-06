@@ -128,14 +128,12 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         Assert.assertEquals(ModuleIdentifier.create("moduleA"), brev.getModuleIdentifier());
         Assert.assertNotNull("ModuleClassLoader not null", brev.getModuleClassLoader());
 
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
         String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
-        Assert.assertNull(brev.getResource(resname));
-        Assert.assertNull(brev.getResources(resname));
+        Assert.assertNotNull(brev.getResource(resname));
+        Assert.assertNotNull(brev.getResources(resname));
         Assert.assertNull(brev.findEntries(resname, null, true));
-        Assert.assertNull(brev.getEntry(resname));
-        Assert.assertNull(brev.getEntryPaths(resname));
+        Assert.assertNotNull(brev.getEntry(resname));
+        Assert.assertNotNull(brev.getEntryPaths(resname));
     }
 
     private JavaArchive getModuleA() {

@@ -89,14 +89,12 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
             Assert.assertTrue(bundleA.getHeaders().isEmpty());
             Assert.assertTrue(bundleA.getHeaders(null).isEmpty());
 
-            // [TODO] Add support for entry/resource related APIs on Module adaptors
-            // https://issues.jboss.org/browse/JBOSGI-566
             String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
-            Assert.assertNull(bundleA.getResource(resname));
-            Assert.assertNull(bundleA.getResources(resname));
+            Assert.assertNotNull(bundleA.getResource(resname));
+            Assert.assertNotNull(bundleA.getResources(resname));
             Assert.assertNull(bundleA.findEntries(resname, null, true));
-            Assert.assertNull(bundleA.getEntry(resname));
-            Assert.assertNull(bundleA.getEntryPaths(resname));
+            Assert.assertNotNull(bundleA.getEntry(resname));
+            Assert.assertNotNull(bundleA.getEntryPaths(resname));
 
             // getRegisteredServices, getServicesInUse
             Assert.assertNull(bundleA.getRegisteredServices());
