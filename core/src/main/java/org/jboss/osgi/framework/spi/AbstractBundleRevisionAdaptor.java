@@ -26,11 +26,13 @@ import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Iterator;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.internal.InternalConstants;
+import org.jboss.osgi.framework.internal.ModuleEntriesProvider;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleWiring;
@@ -49,6 +51,7 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
 
     private final Module module;
     private final XBundle bundle;
+    private final ModuleEntriesProvider entriesProvider;
 
     public AbstractBundleRevisionAdaptor(BundleContext context, Module module) {
         if (context == null)
@@ -57,6 +60,7 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
             throw MESSAGES.illegalArgumentNull("module");
         this.module = module;
         this.bundle = createBundle(context, module, this);
+        this.entriesProvider = new ModuleEntriesProvider(module);
         putAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY, module.getIdentifier());
         putAttachment(InternalConstants.MODULE_KEY, module);
         createWiring();
@@ -93,36 +97,26 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
 
     @Override
     public URL getResource(String name) {
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
-        return null;
+        return module.getExportedResource(name);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
-        return null;
+        return module.getExportedResources(name);
     }
 
     @Override
     public URL getEntry(String path) {
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
-        return null;
+        return entriesProvider.getEntry(path);
     }
 
     @Override
     public Enumeration<String> getEntryPaths(String path) {
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
-        return null;
+        return entriesProvider.getEntryPaths(path);
     }
 
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recursive) {
-        // [TODO] Add support for entry/resource related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-566
-        return null;
+        return entriesProvider.findEntries(path, filePattern, recursive);
     }
 }
