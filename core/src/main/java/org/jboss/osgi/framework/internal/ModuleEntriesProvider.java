@@ -33,11 +33,11 @@ import org.jboss.modules.Module;
  * @author thomas.diesler@jboss.com
  * @since 28-Sep-2010
  */
-final class ModuleEntriesProvider implements EntriesProvider {
+public final class ModuleEntriesProvider implements EntriesProvider {
 
     private final Module module;
 
-    ModuleEntriesProvider(Module module) {
+    public ModuleEntriesProvider(Module module) {
         assert module != null : "Null module";
         this.module = module;
     }
