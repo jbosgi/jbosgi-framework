@@ -151,8 +151,20 @@ final class FallbackLoader implements LocalLoader {
                 AbstractBundleWire wire = new AbstractBundleWire(bcap, breq, brev, hostRev);
                 XWiring requirerWiring = (XWiring) hostBundle.adapt(BundleWiring.class);
                 XWiring providerWiring = (XWiring) brev.getBundle().adapt(BundleWiring.class);
-                requirerWiring.addRequiredWire(wire);
-                providerWiring.addProvidedWire(wire);
+                if (requirerWiring != null) {
+                    requirerWiring.addRequiredWire(wire);
+                }
+                else {
+                    LOGGER.warnf("Unable to add 'requirer' wire [%s] to host bundle [%s] - no bundle wiring available", wire,
+                            hostBundle);
+                }
+                if (providerWiring != null) {
+                    providerWiring.addProvidedWire(wire);
+                }
+                else {
+                    LOGGER.warnf("Unable to add 'provider' wire [%s] to provider bundle [%s] - no bundle wiring available", wire,
+                            brev);
+                }
             }
         }
         return result;

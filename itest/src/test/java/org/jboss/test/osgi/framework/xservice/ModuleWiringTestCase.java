@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 
 import org.jboss.modules.Module;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -41,10 +42,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.VersionRange;
 import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.framework.startlevel.BundleStartLevel;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Test Module integration.
@@ -76,6 +82,18 @@ public class ModuleWiringTestCase extends AbstractModuleIntegrationTest {
     public void testGetBundle() throws Exception {
         Class<?> clazz = brev.getBundle().loadClass(ModuleServiceX.class.getName());
         Assert.assertEquals(brev.getModuleClassLoader(), clazz.getClassLoader());
+    }
+
+    @Test
+    public void testAdapting() throws Exception {
+        Bundle bundle = brev.getBundle();
+        Assert.assertNotNull(BundleContext.class.getName(), bundle.adapt(BundleContext.class));
+        Assert.assertNotNull(BundleRevision.class.getName(), bundle.adapt(BundleRevision.class));
+        Assert.assertNotNull(BundleRevisions.class.getName(), bundle.adapt(BundleRevisions.class));
+        Assert.assertNotNull(BundleStartLevel.class.getName(), bundle.adapt(BundleStartLevel.class));
+        Assert.assertNotNull(BundleManager.class.getName(), bundle.adapt(BundleManager.class));
+        Assert.assertNotNull(Module.class.getName(), bundle.adapt(Module.class));
+        Assert.assertNotNull(BundleWiring.class.getName(), bundle.adapt(BundleWiring.class));
     }
 
     @Test
