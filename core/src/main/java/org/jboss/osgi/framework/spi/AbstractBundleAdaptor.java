@@ -174,7 +174,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
      * {@link BundleRevision} The current Bundle Revision for this bundle.
      * {@link BundleRevisions} All existing Bundle Revision objects for this bundle.
      * {@link BundleStartLevel} The Bundle Start Level for this bundle.
-     * [TODO] {@link BundleWiring} The Bundle Wiring for the current Bundle Revision.
+     * {@link BundleWiring} The Bundle Wiring for the current Bundle Revision.
      *
      * Proprietary extensions:
      *
@@ -198,6 +198,8 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             result = (T) bundleManager;
         } else if (type.isAssignableFrom(Module.class)) {
             result = (T) module;
+        } else if (type.isAssignableFrom(BundleWiring.class)) {
+            result = (T) getBundleRevision().getWiring();
         }
         return result;
     }
