@@ -150,7 +150,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>${surefire.system.args}</argLine>
+                    <argLine>@{jacocoArgLine} @{surefire.system.args}</argLine>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
