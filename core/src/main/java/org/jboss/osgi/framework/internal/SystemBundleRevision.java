@@ -93,7 +93,7 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    URL getLocalizationEntry(String path) {
+    public URL getLocalizationEntry(String path) {
         return null;
     }
 

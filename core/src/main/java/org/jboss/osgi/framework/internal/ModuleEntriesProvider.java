@@ -21,11 +21,19 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import static org.jboss.osgi.vfs.VFSMessages.MESSAGES;
+
+import java.io.File;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jboss.modules.Module;
+import org.jboss.modules.Resource;
 
 /**
  * A bundle entries provider.
@@ -62,6 +70,62 @@ public final class ModuleEntriesProvider implements EntriesProvider {
 
     @Override
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
-        return null;
+        if (path == null)
+            throw MESSAGES.illegalArgumentNull("path");
+
+        if (pattern == null)
+            pattern = "*";
+
+        if (path.startsWith("/"))
+            path = path.substring(1);
+
+        final Pattern filter = convertToPattern(pattern);
+        final Iterator<Resource> it = module.getClassLoader().iterateResources(path, recurse);
+        return new Enumeration<URL>() {
+
+            Resource current;
+
+            @Override
+            public synchronized boolean hasMoreElements()
+            {
+                return current != null || (current = findNext()) != null;
+            }
+
+            @Override
+            public synchronized URL nextElement()
+            {
+                Resource current = this.current;
+                if(current == null) {
+                    current = findNext();
+                }
+                if(current == null) {
+                    throw new NoSuchElementException();
+                }
+                this.current = null;
+                return current.getURL();
+            }
+
+            private Resource findNext()
+            {
+                for (;;) {
+                    if (!it.hasNext()) {
+                        return null;
+                    }
+                    Resource r = it.next();
+                    String fullName = r.getName();
+                    String simpleName = new File(fullName).getName();
+                    Matcher matcher = filter.matcher(simpleName);
+                    if (matcher.find()) {
+                        return r;
+                    }
+                }
+            }
+        };
+    }
+
+    // Convert file pattern (RFC 1960-based Filter) into a RegEx pattern
+    private static Pattern convertToPattern(String filePattern) {
+        filePattern = filePattern.replace("*", ".*");
+        return Pattern.compile("^" + filePattern + "$");
     }
 }
