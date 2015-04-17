@@ -220,7 +220,7 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    URL getLocalizationEntry(String path) {
+    public URL getLocalizationEntry(String path) {
         // The framework must first search in the bundle’s JAR for the localization entry.
         URL entry = getEntry(path);
         if (entry != null)

@@ -32,7 +32,6 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,6 +43,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.internal.AbstractCommonBundleRevision;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
@@ -79,12 +79,12 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     private final ReentrantLock bundleLock = new ReentrantLock();
     private final BundleManager bundleManager;
     private final BundleContext context;
-    private final XBundleRevision brev;
+    private final AbstractCommonBundleRevision brev;
     private final Module module;
     private BundleActivator bundleActivator;
     private long lastModified;
 
-    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision brev) {
+    public AbstractBundleAdaptor(BundleContext context, Module module, AbstractCommonBundleRevision brev) {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
@@ -178,7 +178,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
      *
      * Proprietary extensions:
      *
-     * [TODO] {@link OSGiMetaData} The Bundle metadata.
+     * {@link OSGiMetaData} The Bundle metadata.
      * {@link Module} The Bundle's module.
      * {@link BundleManager} The Bundle manager.
      */
@@ -200,8 +200,14 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             result = (T) module;
         } else if (type.isAssignableFrom(BundleWiring.class)) {
             result = (T) getBundleRevision().getWiring();
+        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
+            result = (T) getOSGiMetaData();
         }
         return result;
+    }
+
+    OSGiMetaData getOSGiMetaData() {
+        return getBundleRevision().getOSGiMetaData();
     }
 
     BundleRevisions getBundleRevisions() {
@@ -361,9 +367,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
-        // [TODO] Add support for manifest header related APIs on Module adaptors
-        // https://issues.jboss.org/browse/JBOSGI-567
-        return new Hashtable<String, String>();
+        return getBundleRevision().getHeadersFromRaw(getOSGiMetaData().getHeaders(), locale);
     }
 
     @Override
@@ -432,7 +436,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    public XBundleRevision getBundleRevision() {
+    public AbstractCommonBundleRevision getBundleRevision() {
         return brev;
     }
 

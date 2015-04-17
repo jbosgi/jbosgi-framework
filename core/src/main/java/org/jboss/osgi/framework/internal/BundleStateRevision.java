@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.net.URL;
 import java.util.Dictionary;
 
 import org.jboss.modules.Module;
@@ -37,7 +36,6 @@ import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilder;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
-import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleException;
 
@@ -48,7 +46,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-abstract class BundleStateRevision extends AbstractBundleRevision {
+abstract class BundleStateRevision extends AbstractCommonBundleRevision {
 
     private final FrameworkState frameworkState;
     private final OSGiMetaData metadata;
@@ -108,7 +106,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return storageState.getRevisionId();
     }
 
-    OSGiMetaData getOSGiMetaData() {
+    public OSGiMetaData getOSGiMetaData() {
         return metadata;
     }
 
@@ -127,8 +125,6 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     abstract String getLocation();
 
     abstract Class<?> loadClass(String className) throws ClassNotFoundException;
-
-    abstract URL getLocalizationEntry(String path);
 
     @Override
     public ModuleIdentifier getModuleIdentifier() {

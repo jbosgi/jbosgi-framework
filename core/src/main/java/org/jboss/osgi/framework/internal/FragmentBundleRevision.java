@@ -98,7 +98,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    URL getLocalizationEntry(String path) {
+    public URL getLocalizationEntry(String path) {
 
         URL result = null;
 

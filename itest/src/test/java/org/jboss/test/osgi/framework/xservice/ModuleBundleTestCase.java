@@ -21,12 +21,17 @@
  */
 package org.jboss.test.osgi.framework.xservice;
 
+import java.io.File;
+import java.net.URL;
+import java.util.Enumeration;
+
 import org.jboss.modules.Module;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceZ;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -84,15 +89,25 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
             // getState
             Assert.assertEquals(Bundle.RESOLVED, bundleA.getState());
 
-            // [TODO] Add support for manifest header related APIs on Module adaptors
-            // https://issues.jboss.org/browse/JBOSGI-567
-            Assert.assertTrue(bundleA.getHeaders().isEmpty());
-            Assert.assertTrue(bundleA.getHeaders(null).isEmpty());
+            Assert.assertFalse(bundleA.getHeaders().isEmpty());
+            Assert.assertFalse(bundleA.getHeaders(null).isEmpty());
 
             String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
+            String resOneAwayPath = new File(resname).getParent();
+            String resTwoAwayPath = new File(resOneAwayPath).getParent();
             Assert.assertNotNull(bundleA.getResource(resname));
             Assert.assertNotNull(bundleA.getResources(resname));
-            Assert.assertNull(bundleA.findEntries(resname, null, true));
+            Assert.assertNotNull(bundleA.findEntries(resname, null, true));
+            Assert.assertTrue(bundleA.findEntries(resOneAwayPath, null, true).hasMoreElements());
+            Assert.assertTrue(bundleA.findEntries(resTwoAwayPath, null, true).hasMoreElements());
+            Assert.assertFalse(bundleA.findEntries(resTwoAwayPath, null, false).hasMoreElements());
+            Assert.assertTrue(bundleA.findEntries(resTwoAwayPath, "Mod*X.cl*s", true).hasMoreElements());
+            Assert.assertFalse(bundleA.findEntries(resTwoAwayPath, "Nod*.cl*s", true).hasMoreElements());
+            Enumeration<URL> urls = bundleA.findEntries(resTwoAwayPath, "Mod*.cl*s", true);
+            for(int i = 0; i < 2; i++) {
+                Assert.assertTrue(urls.hasMoreElements());
+                Assert.assertNotNull(urls.nextElement());
+            }
             Assert.assertNotNull(bundleA.getEntry(resname));
             Assert.assertNotNull(bundleA.getEntryPaths(resname));
 
@@ -188,6 +203,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(ModuleServiceX.class);
+        archive.addClasses(ModuleServiceZ.class);
         return archive;
     }
 

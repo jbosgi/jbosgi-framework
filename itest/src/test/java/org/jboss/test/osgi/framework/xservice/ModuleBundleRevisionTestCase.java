@@ -21,9 +21,10 @@ package org.jboss.test.osgi.framework.xservice;
  * #L%
  */
 
+import java.io.File;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
-
-import org.junit.Assert;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -32,7 +33,9 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceZ;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -129,9 +132,21 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         Assert.assertNotNull("ModuleClassLoader not null", brev.getModuleClassLoader());
 
         String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
+        String resOneAwayPath = new File(resname).getParent();
+        String resTwoAwayPath = new File(resOneAwayPath).getParent();
         Assert.assertNotNull(brev.getResource(resname));
         Assert.assertNotNull(brev.getResources(resname));
-        Assert.assertNull(brev.findEntries(resname, null, true));
+        Assert.assertNotNull(brev.findEntries(resname, null, true));
+        Assert.assertTrue(brev.findEntries(resOneAwayPath, null, true).hasMoreElements());
+        Assert.assertTrue(brev.findEntries(resTwoAwayPath, null, true).hasMoreElements());
+        Assert.assertFalse(brev.findEntries(resTwoAwayPath, null, false).hasMoreElements());
+        Assert.assertTrue(brev.findEntries(resTwoAwayPath, "Mod*X.cl*s", true).hasMoreElements());
+        Assert.assertFalse(brev.findEntries(resTwoAwayPath, "Nod*.cl*s", true).hasMoreElements());
+        Enumeration<URL> urls = brev.findEntries(resTwoAwayPath, "Mod*.cl*s", true);
+        for(int i = 0; i < 2; i++) {
+            Assert.assertTrue(urls.hasMoreElements());
+            Assert.assertNotNull(urls.nextElement());
+        }
         Assert.assertNotNull(brev.getEntry(resname));
         Assert.assertNotNull(brev.getEntryPaths(resname));
     }
@@ -139,6 +154,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(ModuleServiceX.class);
+        archive.addClasses(ModuleServiceZ.class);
         return archive;
     }
 }

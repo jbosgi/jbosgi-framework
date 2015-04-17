@@ -386,65 +386,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Dictionary<String, String> getHeaders(String locale) {
-        // Get the raw (unlocalized) manifest headers
-        Dictionary<String, String> rawHeaders = getOSGiMetaData().getHeaders();
-
-        // If the specified locale is the empty string, this method will return the
-        // raw (unlocalized) manifest headers including any leading "%"
-        if ("".equals(locale))
-            return rawHeaders;
-
-        // If the specified locale is null then the locale
-        // returned by java.util.Locale.getDefault is used
-        if (locale == null)
-            locale = Locale.getDefault().toString();
-
-        // Get the localization base name
-        String baseName = rawHeaders.get(Constants.BUNDLE_LOCALIZATION);
-        if (baseName == null)
-            baseName = Constants.BUNDLE_LOCALIZATION_DEFAULT_BASENAME;
-
-        // Get the resource bundle URL for the given base and locale
-        URL entryURL = getLocalizationEntry(baseName, locale);
-
-        // If the specified locale entry could not be found fall back to the default locale entry
-        if (entryURL == null) {
-            String defaultLocale = Locale.getDefault().toString();
-            entryURL = getLocalizationEntry(baseName, defaultLocale);
-        }
-
-        // Read the resource bundle
-        ResourceBundle resBundle = null;
-        if (entryURL != null) {
-            try {
-                resBundle = new PropertyResourceBundle(entryURL.openStream());
-            } catch (IOException ex) {
-                throw MESSAGES.illegalStateCannotReadResourceBundle(ex, entryURL);
-            }
-        }
-
-        Dictionary<String, String> locHeaders = new Hashtable<String, String>();
-        Enumeration<String> e = rawHeaders.keys();
-        while (e.hasMoreElements()) {
-            String key = e.nextElement();
-            String value = rawHeaders.get(key);
-            if (value.startsWith("%"))
-                value = value.substring(1);
-
-            if (resBundle != null) {
-                try {
-                    value = resBundle.getString(value);
-                } catch (MissingResourceException ex) {
-                    // ignore
-                }
-            }
-
-            locHeaders.put(key, value);
-        }
-
-        return new CaseInsensitiveDictionary(locHeaders);
+        return getBundleRevision().getHeadersFromRaw(getOSGiMetaData().getHeaders(), locale);
     }
 
     OSGiMetaData getOSGiMetaData() {
@@ -462,49 +405,6 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     boolean isUninstalled() {
         return getState() == Bundle.UNINSTALLED;
-    }
-
-    private URL getLocalizationEntry(String baseName, String locale) {
-        // The Framework searches for localization entries by appending suffixes to
-        // the localization base name according to a specified locale and finally
-        // appending the .properties suffix. If a translation is not found, the locale
-        // must be made more generic by first removing the variant, then the country
-        // and finally the language until an entry is found that contains a valid translation.
-
-        String entryPath = baseName + "_" + locale + ".properties";
-
-        URL entryURL = getLocalizationEntry(entryPath);
-        while (entryURL == null) {
-            if (entryPath.equals(baseName + ".properties"))
-                break;
-
-            int lastIndex = locale.lastIndexOf('_');
-            if (lastIndex > 0) {
-                locale = locale.substring(0, lastIndex);
-                entryPath = baseName + "_" + locale + ".properties";
-            } else {
-                entryPath = baseName + ".properties";
-            }
-
-            // The bundle's class loader is not used to search for localization entries. Only
-            // the contents of the bundle and its attached fragments are searched.
-            entryURL = getLocalizationEntry(entryPath);
-        }
-        return entryURL;
-    }
-
-    /**
-     * The framework must search for localization entries using the following search rules based on the bundle type:
-     * <p/>
-     * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the
-     * attached host bundle with the highest version. If the fragment is not resolved, then the framework must search the
-     * fragment's JAR for the localization entry.
-     * <p/>
-     * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found
-     * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
-     */
-    private URL getLocalizationEntry(String entryPath) {
-        return getBundleRevision().getLocalizationEntry(entryPath);
     }
 
     @Override
