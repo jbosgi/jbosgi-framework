@@ -140,9 +140,11 @@ final class FallbackLoader implements LocalLoader {
         if (brev != null) {
             try {
                 ModuleClassLoader moduleClassLoader = brev.getModuleClassLoader();
+                LOGGER.tracef("Fallback loader loaded class [%s] from module: %s", className, brev);
                 result = moduleClassLoader.loadClass(className);
-            } catch (ClassNotFoundException ex) {
-                LOGGER.tracef("Cannot load class [%s] from module: %s", className, brev);
+            }
+            catch (ClassNotFoundException ex) {
+                LOGGER.warnf("Fallback loader cannot load class [%s] from module: %s", className, brev);
                 return null;
             }
             if (context.capability != null && context.requirement != null) {
@@ -155,17 +157,22 @@ final class FallbackLoader implements LocalLoader {
                     requirerWiring.addRequiredWire(wire);
                 }
                 else {
-                    LOGGER.warnf("Unable to add 'requirer' wire [%s] to host bundle [%s] - no bundle wiring available", wire,
-                            hostBundle);
+                    LOGGER.warnf(
+                            "Fallback loader unable to add 'requirer' wire [%s] to host bundle [%s] - no bundle wiring available",
+                            wire, hostBundle);
                 }
                 if (providerWiring != null) {
                     providerWiring.addProvidedWire(wire);
                 }
                 else {
-                    LOGGER.warnf("Unable to add 'provider' wire [%s] to provider bundle [%s] - no bundle wiring available", wire,
-                            brev);
+                    LOGGER.warnf(
+                            "Fallback loader unable to add 'provider' wire [%s] to provider bundle [%s] - no bundle wiring available",
+                            wire, brev);
                 }
             }
+        }
+        else {
+            LOGGER.debugf("Fallback loader cannot find class [%s] anywhere", className);
         }
         return result;
     }
@@ -190,13 +197,18 @@ final class FallbackLoader implements LocalLoader {
 
             findRevisionDynamically(context, matchingPatterns);
             XBundleRevision brev = context.targetRevision;
-            if (brev == null)
+            if (brev == null) {
+                LOGGER.debugf("Fallback loader cannot find resource [%s] anywhere", resName);
                 return Collections.emptyList();
+            }
 
             URL resURL = brev.getEntry(resName);
             if (resURL == null) {
-                LOGGER.tracef("Cannot load resource [%s] from module: %s", resName, brev);
+                LOGGER.warnf("Fallback loader cannot load resource [%s] from module: %s", resName, brev);
                 return Collections.emptyList();
+            }
+            else {
+                LOGGER.tracef("Fallback loader loaded resource [%s] from module: %s", resName, brev);
             }
 
             return Collections.singletonList((Resource) new URLResource(resURL));
