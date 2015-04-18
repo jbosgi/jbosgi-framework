@@ -411,9 +411,9 @@ final class FallbackLoader implements LocalLoader {
         String resName = context.resName;
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
         URL resURL = brev.getEntry(resName);
-        if (resURL == null && brev instanceof UserBundleRevision) {
-            UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
-            Iterator<String> itpaths = userRev.getOSGiMetaData().getBundleClassPath().iterator();
+        if (resURL == null) {
+            AbstractCommonBundleRevision cRev = (AbstractCommonBundleRevision) brev;
+            Iterator<String> itpaths = cRev.getOSGiMetaData().getBundleClassPath().iterator();
             while (resURL == null && itpaths.hasNext()) {
                 String path = itpaths.next();
                 if (!path.contains("*") && !path.endsWith(".jar")) {
