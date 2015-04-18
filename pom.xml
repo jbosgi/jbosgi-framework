@@ -53,7 +53,7 @@
         <version.jboss.msc>1.2.2.Final</version.jboss.msc>
         <version.jboss.osgi.deployment>2.0.2.Final</version.jboss.osgi.deployment>
         <version.jboss.osgi.metadata>4.0.0.Final</version.jboss.osgi.metadata>
-        <version.jboss.osgi.resolver>4.0.3.Final</version.jboss.osgi.resolver>
+        <version.jboss.osgi.resolver>4.0.4.Final-SNAPSHOT</version.jboss.osgi.resolver>
         <version.jboss.osgi.spi>4.0.2.Final</version.jboss.osgi.spi>
         <version.jboss.osgi.testing>2.0.2.Final</version.jboss.osgi.testing>
         <version.jboss.osgi.vfs>2.0.2.Final</version.jboss.osgi.vfs>
