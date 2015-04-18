@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: osgi373.bundleC
+Import-Package: org.jboss.test.osgi.framework.serviceloader
+DynamicImport-Package: META-INF.services,
+ org.jboss.test.osgi.framework.serviceloader.*
+Dependencies: moduleA meta-inf
