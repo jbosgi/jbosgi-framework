@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -36,8 +37,10 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.framework.spi.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.VirtualFileResourceLoader;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilder;
@@ -50,6 +53,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.mockito.Mockito;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.resource.Capability;
 
 /**
  * Test Module integration.
@@ -123,6 +128,13 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         };
         XBundleRevisionBuilder builder = XBundleRevisionBuilderFactory.create(factory);
         XBundleRevision brev = builder.loadFrom(module).getResource();
+
+        OSGiMetaDataBuilder metaBuilder = OSGiMetaDataBuilder.createBuilder(brev.getSymbolicName(), brev.getVersion());
+        List<Capability> exportedPaths = brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE);
+        for(Capability cap : exportedPaths) {
+            metaBuilder.addExportPackages(cap.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE).toString());
+        }
+        brev.putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metaBuilder.getOSGiMetaData());
 
         // Add the {@link XBundleRevision} to the {@link XEnvironment}
         env.installResources(brev);
