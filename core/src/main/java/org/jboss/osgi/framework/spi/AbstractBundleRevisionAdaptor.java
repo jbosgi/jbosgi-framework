@@ -21,34 +21,24 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.jar.Manifest;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.internal.AbstractCommonBundleRevision;
 import org.jboss.osgi.framework.internal.InternalConstants;
 import org.jboss.osgi.framework.internal.ModuleEntriesProvider;
-import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleWiring;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
 
 /**
@@ -149,94 +139,12 @@ public class AbstractBundleRevisionAdaptor extends AbstractCommonBundleRevision 
     {
         OSGiMetaData metadata = this.metadata;
         if (metadata == null) {
-            LOGGER.tracef("First time initializing module [%s] OSGI metadata", module);
             metadata = getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
             if (metadata == null) {
-                LOGGER.tracef("No module [%s] OSGI metadata found in the attachment", module);
-                try {
-                    metadata = createOSGiMetaData();
-                }
-                catch (IOException e) {
-                    LOGGER.warnf(e, "Unable to construct OSGI metadata by reading manifest of module [%s]",
-                            module);
-                }
+               throw new IllegalStateException(AbstractCommonBundleRevision.class.getName() + " has no OSGiMetaData attachment");
             }
-            if (metadata != null) {
-                this.metadata = metadata;
-            }
+            this.metadata = metadata;
         }
         return metadata;
-    }
-
-    protected OSGiMetaData getOSGiMetaDataFromManifest() throws IOException {
-        OSGiMetaData result = null;
-        LOGGER.tracef("Attempting to read OSGI metadata from module [%s]", module);
-        Manifest manifest = getManifest();
-        if (OSGiManifestBuilder.isValidBundleManifest(manifest)) {
-            result = OSGiMetaDataBuilder.load(manifest);
-            LOGGER.debugf("Found OSGI metadata in the manifest of module [%s]: %s", module, result);
-        }
-        return result;
-    }
-
-    protected OSGiMetaData createOSGiMetaData() throws IOException {
-        OSGiMetaData result = getOSGiMetaDataFromManifest();
-        if (result == null) {
-            result = getOSGiMetaDataFromModule(module);
-            LOGGER.tracef("OSGI metadata created for module [%s]: %s", module, result);
-        }
-        return result;
-    }
-
-    protected OSGiMetaData getOSGiMetaDataFromModule(Module module) {
-
-        // Get symbolic name & version
-        ModuleIdentifier moduleId = module.getIdentifier();
-        String symbolicName = moduleId.getName();
-        Version version;
-        try {
-            version = Version.parseVersion(moduleId.getSlot());
-        } catch (IllegalArgumentException ex) {
-            version = Version.emptyVersion;
-        }
-        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
-
-        // Add a package capability for every exported path
-        Set<String> paths = new HashSet<String>();
-        Iterator<Resource> it = module.getClassLoader().iterateResources("", true);
-        while (it.hasNext()) {
-            Resource res = it.next();
-            String path = res.getName();
-            if (!path.endsWith(".class"))
-                continue;
-
-            int index = path.lastIndexOf("/");
-            if (index <= 0)
-                continue;
-
-            path = path.substring(0, index);
-            if (!paths.contains(path)) {
-                paths.add(path);
-                String packageName = path.replace('/', '.');
-                builder.addExportPackages(packageName);
-            }
-        }
-
-        return builder.getOSGiMetaData();
-    }
-
-    protected Manifest getManifest() throws IOException
-    {
-        URL manifestUrl = module.getClassLoader().getResource("META-INF/MANIFEST.MF");
-        if (manifestUrl != null) {
-            InputStream manifestStream = manifestUrl.openStream();
-            try {
-                return new Manifest(manifestStream);
-            }
-            finally {
-                manifestStream.close();
-            }
-        }
-        return null;
     }
 }
