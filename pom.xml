@@ -36,14 +36,14 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>3.0.7.Final-SNAPSHOT</version>
+    <version>3.0.7.Final</version>
 
     <!-- Source Control -->
     <scm>
         <connection>scm:git:git://github.com/jbosgi/jbosgi-framework.git</connection>
         <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-framework.git</developerConnection>
         <url>http://github.com/jbosgi/jbosgi-framework</url>
-        <tag>HEAD</tag>
+        <tag>3.0.7.Final</tag>
     </scm>
 
     <!-- Properties -->
