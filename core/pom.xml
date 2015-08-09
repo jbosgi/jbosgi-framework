@@ -34,7 +34,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>3.0.7.Final</version>
+        <version>3.0.8.Final</version>
     </parent>
 
     <name>JBossOSGi Framework Core</name>
@@ -85,6 +85,11 @@
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging-processor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss</groupId>
+            <artifactId>jboss-vfs</artifactId>
             <scope>provided</scope>
         </dependency>
 
