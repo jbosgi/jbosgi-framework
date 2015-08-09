@@ -51,12 +51,12 @@
         <version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
         <version.javax.inject>1</version.javax.inject>
         <version.jboss.msc>1.2.2.Final</version.jboss.msc>
-        <version.jboss.osgi.deployment>2.0.2.Final</version.jboss.osgi.deployment>
-        <version.jboss.osgi.metadata>4.0.1.Final</version.jboss.osgi.metadata>
-        <version.jboss.osgi.resolver>4.0.4.Final</version.jboss.osgi.resolver>
-        <version.jboss.osgi.spi>4.0.2.Final</version.jboss.osgi.spi>
-        <version.jboss.osgi.testing>2.0.2.Final</version.jboss.osgi.testing>
-        <version.jboss.osgi.vfs>2.0.2.Final</version.jboss.osgi.vfs>
+        <version.jboss.osgi.deployment>2.0.3.Final</version.jboss.osgi.deployment>
+        <version.jboss.osgi.metadata>4.0.2.Final</version.jboss.osgi.metadata>
+        <version.jboss.osgi.resolver>4.0.6.Final</version.jboss.osgi.resolver>
+        <version.jboss.osgi.spi>4.0.3.Final</version.jboss.osgi.spi>
+        <version.jboss.osgi.testing>2.0.3.Final</version.jboss.osgi.testing>
+        <version.jboss.osgi.vfs>2.0.3.Final</version.jboss.osgi.vfs>
 
         <surefire.profiler.args />
         <surefire.system.args>-ea ${surefire.profiler.args}</surefire.system.args>
