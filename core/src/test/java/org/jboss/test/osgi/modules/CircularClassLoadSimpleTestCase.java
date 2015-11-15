@@ -37,6 +37,7 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.modules.CircularClassLoadComplexTestCase.PostDefineModuleClassLoader;
 import org.jboss.test.osgi.modules.a.A;
 import org.jboss.test.osgi.modules.a.ModuleActivatorA;
 import org.junit.After;
@@ -126,6 +127,16 @@ public class CircularClassLoadSimpleTestCase extends ModulesTestBase {
     }
 
     static class PostDefineModuleClassLoader extends ModuleClassLoader {
+        static {
+            boolean parallelOk = true;
+            try {
+                parallelOk = ClassLoader.registerAsParallelCapable();
+            } catch (Throwable ignored) {
+            }
+            if (! parallelOk) {
+                throw new Error("Failed to register " + PostDefineModuleClassLoader.class.getName() + " as parallel-capable");
+            }
+        }
 
         private final PathFilter activationFilter;
 

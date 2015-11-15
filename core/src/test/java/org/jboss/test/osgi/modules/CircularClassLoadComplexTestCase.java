@@ -138,6 +138,16 @@ public class CircularClassLoadComplexTestCase extends ModulesTestBase {
     }
 
     static class PostDefineModuleClassLoader extends ModuleClassLoader {
+        static {
+            boolean parallelOk = true;
+            try {
+                parallelOk = ClassLoader.registerAsParallelCapable();
+            } catch (Throwable ignored) {
+            }
+            if (! parallelOk) {
+                throw new Error("Failed to register " + PostDefineModuleClassLoader.class.getName() + " as parallel-capable");
+            }
+        }
 
         private final PathFilter activationFilter;
 
