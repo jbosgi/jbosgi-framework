@@ -20,7 +20,7 @@
   <http://www.gnu.org/licenses/lgpl-2.1.html>.
   #L%
   -->
-<module xmlns="urn:jboss:module:1.0" name="javax.inject.api">
+<module xmlns="urn:jboss:module:1.3" name="javax.inject.api">
     <resources>
         <resource-root path="javax.inject-1.jar"/>
     </resources>
