@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.jboss.osgi</groupId>
         <artifactId>jbosgi-parent</artifactId>
-        <version>2.0.1-SNAPSHOT</version>
+        <version>2.0.1</version>
     </parent>
 
     <name>JBossOSGi Framework</name>
@@ -50,12 +50,12 @@
     <properties>
         <version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
         <version.javax.inject>1</version.javax.inject>
-        <version.jboss.osgi.deployment>3.0.1.Final-SNAPSHOT</version.jboss.osgi.deployment>
-        <version.jboss.osgi.metadata>5.0.1.Final-SNAPSHOT</version.jboss.osgi.metadata>
-        <version.jboss.osgi.resolver>5.0.1.Final-SNAPSHOT</version.jboss.osgi.resolver>
-        <version.jboss.osgi.spi>5.0.1.Final-SNAPSHOT</version.jboss.osgi.spi>
-        <version.jboss.osgi.testing>3.0.1.Final-SNAPSHOT</version.jboss.osgi.testing>
-        <version.jboss.osgi.vfs>3.0.1.Final-SNAPSHOT</version.jboss.osgi.vfs>
+        <version.jboss.osgi.deployment>3.0.1.Final</version.jboss.osgi.deployment>
+        <version.jboss.osgi.metadata>5.0.1.Final</version.jboss.osgi.metadata>
+        <version.jboss.osgi.resolver>5.0.1.Final</version.jboss.osgi.resolver>
+        <version.jboss.osgi.spi>5.0.1.Final</version.jboss.osgi.spi>
+        <version.jboss.osgi.testing>3.0.1.Final</version.jboss.osgi.testing>
+        <version.jboss.osgi.vfs>3.0.1.Final</version.jboss.osgi.vfs>
 
         <surefire.profiler.args />
         <surefire.system.args>-ea ${surefire.profiler.args}</surefire.system.args>
