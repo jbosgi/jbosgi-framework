@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.jboss.osgi</groupId>
         <artifactId>jbosgi-parent</artifactId>
-        <version>3.0.1-SNAPSHOT</version>
+        <version>3.0.2</version>
     </parent>
 
     <name>JBossOSGi Framework</name>
@@ -36,14 +36,14 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>5.0.1.Final-SNAPSHOT</version>
+    <version>5.0.1.Final</version>
 
     <!-- Source Control -->
     <scm>
         <connection>scm:git:git://github.com/jbosgi/jbosgi-framework.git</connection>
         <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-framework.git</developerConnection>
         <url>http://github.com/jbosgi/jbosgi-framework</url>
-        <tag>HEAD</tag>
+        <tag>5.0.1.Final</tag>
     </scm>
 
     <!-- Properties -->
@@ -80,32 +80,32 @@
             <dependency>
                 <groupId>org.jboss.osgi.deployment</groupId>
                 <artifactId>jbosgi-deployment</artifactId>
-                <version>${version.jboss.osgi.deployment}</version>
+                <version>4.0.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.metadata</groupId>
                 <artifactId>jbosgi-metadata</artifactId>
-                <version>${version.jboss.osgi.metadata}</version>
+                <version>6.0.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.resolver</groupId>
                 <artifactId>jbosgi-resolver-felix</artifactId>
-                <version>${version.jboss.osgi.resolver}</version>
+                <version>6.0.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.spi</groupId>
                 <artifactId>jbosgi-spi</artifactId>
-                <version>${version.jboss.osgi.spi}</version>
+                <version>6.0.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.testing</groupId>
                 <artifactId>jbosgi-testing</artifactId>
-                <version>${version.jboss.osgi.testing}</version>
+                <version>4.0.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.vfs</groupId>
                 <artifactId>jbosgi-vfs30</artifactId>
-                <version>${version.jboss.osgi.vfs}</version>
+                <version>4.0.1.Final</version>
             </dependency>
 
             <!-- Test dependencies -->
