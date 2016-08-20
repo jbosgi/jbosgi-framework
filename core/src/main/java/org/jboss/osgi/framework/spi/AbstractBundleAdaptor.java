@@ -233,11 +233,9 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public void start(int options) throws BundleException {
-        LockContext lockContext = null;
         LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
+        LockContext lockContext = lockManager.lockItems(Method.START, this);
         try {
-            lockContext = lockManager.lockItems(Method.START, this);
-
             // If this bundle's state is ACTIVE then this method returns immediately.
             if (getState() == Bundle.ACTIVE)
                 return;
@@ -297,12 +295,9 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public void stop(int options) throws BundleException {
-
-        LockContext lockContext = null;
         LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
+        LockContext lockContext = lockManager.lockItems(Method.STOP, this);
         try {
-            lockContext = lockManager.lockItems(Method.STOP, this);
-
             // If this bundle's state is not ACTIVE then this method returns immediately.
             if (getState() != Bundle.ACTIVE)
                 return;
@@ -341,12 +336,11 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public void uninstall() throws BundleException {
-        LockContext lockContext = null;
         LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
-        try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.RESOLVE, wireLock, this);
 
+        FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        LockContext lockContext = lockManager.lockItems(Method.RESOLVE, wireLock, this);
+        try {
             // Uninstall from the environment
             XEnvironment env = getPluginService(Services.ENVIRONMENT, XEnvironment.class);
             env.uninstallResources(getBundleRevision());

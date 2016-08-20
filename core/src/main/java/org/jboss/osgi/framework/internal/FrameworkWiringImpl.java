@@ -101,10 +101,8 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         final List<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
         final List<XBundle> dependencyClosure = new ArrayList<XBundle>();
 
-        LockContext lockContext = null;
+        LockContext lockContext = lockEnvironment(LockManager.Method.REFRESH);
         try {
-            lockContext = lockEnvironment(LockManager.Method.REFRESH);
-
             if (bundles == null) {
                 bundlesToRefresh.addAll(getRemovalPendingBundles());
             } else {
@@ -150,14 +148,12 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             }
         }
 
-        LockContext context = null;
+        LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        XBundle[] bundles = dependencyClosure.toArray(new XBundle[dependencyClosure.size()]);
+        LockableItem[] items = LockUtils.getLockableItems(bundles, new LockableItem[] { wireLock });
+        LockContext context = lockManager.lockItems(Method.REFRESH, items);
         try {
             // Lock the dependency closure
-            LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            XBundle[] bundles = dependencyClosure.toArray(new XBundle[dependencyClosure.size()]);
-            LockableItem[] items = LockUtils.getLockableItems(bundles, new LockableItem[] { wireLock });
-            context = lockManager.lockItems(Method.REFRESH, items);
-
             BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
             Collections.sort(stopList, startLevelComparator);
 
