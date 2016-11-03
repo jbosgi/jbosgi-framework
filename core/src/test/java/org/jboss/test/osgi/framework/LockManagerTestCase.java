@@ -92,9 +92,8 @@ public class LockManagerTestCase {
             Runnable runner = new Runnable() {
                 @Override
                 public void run() {
-                    LockContext lockContext = null;
+                    LockContext lockContext = lockManager.lockItems(task.method, task.items);
                     try {
-                        lockContext = lockManager.lockItems(task.method, task.items);
                         for (TestItem item : task.items) {
                             if (task.method == Method.START) {
                                 item.start();
@@ -288,9 +287,8 @@ public class LockManagerTestCase {
         }
 
         void start() {
-            LockContext lockContext = null;
+            LockContext lockContext = lockManager.lockItems(Method.START, this);
             try {
-                lockContext = lockManager.lockItems(Method.START, this);
                 // do stuff
                 Thread.sleep(100);
             } catch (InterruptedException ex) {
@@ -301,9 +299,8 @@ public class LockManagerTestCase {
         }
 
         void stop() {
-            LockContext lockContext = null;
+            LockContext lockContext = lockManager.lockItems(Method.START, this);
             try {
-                lockContext = lockManager.lockItems(Method.START, this);
                 // do stuff
                 Thread.sleep(100);
             } catch (InterruptedException ex) {

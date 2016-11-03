@@ -155,10 +155,9 @@ final class FrameworkResolverImpl implements XResolver {
 
             Map<Resource, List<Wire>> wiremap;
 
-            LockContext lockContext = null;
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            LockContext lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
             try {
-                FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-                lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
                 wiremap = resolver.resolve(resolveContext);
                 if (applyResults) {
                     applyResolverResults(env, wiremap);

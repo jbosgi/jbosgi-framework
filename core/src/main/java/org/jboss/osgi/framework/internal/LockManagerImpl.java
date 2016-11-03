@@ -25,10 +25,10 @@ import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,8 +36,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockException;
 import org.jboss.osgi.framework.spi.LockManager;
-
-
 
 /**
  * The plugin for framework locks.
@@ -47,31 +45,28 @@ import org.jboss.osgi.framework.spi.LockManager;
  */
 public final class LockManagerImpl implements LockManager {
 
-    private final FrameworkWiringLock wiringLock = new FrameworkWiringLock();
-    private final Map<Class<? extends LockableItem>, LockableItem> otherLocks = new HashMap<Class<? extends LockableItem>, LockableItem>();
+    private final ConcurrentMap<Class<? extends LockableItem>, LockableItem> locks = new ConcurrentHashMap<Class<? extends LockableItem>, LockableItem>();
+    private final ThreadLocal<Stack<LockContext>> lockContextAssociation = new ThreadLocal<Stack<LockContext>>();
 
-    private static ThreadLocal<Stack<LockContext>> lockContextAssociation = new ThreadLocal<Stack<LockContext>>();
+    public LockManagerImpl() {
+        locks.put(FrameworkWiringLock.class, new FrameworkWiringLock());
+    }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends LockableItem> T getItemForType(Class<T> type) {
-        synchronized (otherLocks) {
-            T lock;
-            if (type == FrameworkWiringLock.class) {
-                return (T) wiringLock;
-            } else {
-                lock = (T) otherLocks.get(type);
-                if (lock == null) {
-                    try {
-                        lock = type.newInstance();
-                        otherLocks.put(type, lock);
-                    } catch (Exception ex) {
-                        throw new LockException(ex);
-                    }
-                }
+        T lock = (T) locks.get(type);
+        if (lock == null) {
+            T newLock = null;
+            try {
+               newLock = type.newInstance();
+            } catch (Exception e) {
+                throw new LockException(e);
             }
-            return lock;
+            T oldLock = (T) locks.putIfAbsent(type, newLock);
+            lock = oldLock == null ? newLock : oldLock;
         }
+        return lock;
     }
 
     @Override
@@ -90,7 +85,8 @@ public final class LockManagerImpl implements LockManager {
         return lockItemsInternal(method, timeout, unit, items);
     }
 
-    private synchronized LockContext lockItemsInternal(Method method, long timeout, TimeUnit unit, LockableItem... items) {
+    private synchronized LockContext lockItemsInternal(Method method, long timeout, TimeUnit unit,
+            LockableItem... items) {
 
         LockContextImpl context = new LockContextImpl(method, items);
 

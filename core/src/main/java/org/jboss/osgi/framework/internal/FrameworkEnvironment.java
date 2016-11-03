@@ -73,9 +73,8 @@ final class FrameworkEnvironment extends AbstractIntegrationService<FrameworkEnv
         if (brev == null)
             throw MESSAGES.illegalArgumentNull("brev");
 
-        LockContext lockContext = null;
+        LockContext lockContext = lockResources(Method.INSTALL, brev);
         try {
-            lockContext = lockResources(Method.INSTALL, brev);
             injectedEnvironment.getValue().installResources(brev);
         } finally {
             unlockResources(lockContext);
@@ -86,9 +85,8 @@ final class FrameworkEnvironment extends AbstractIntegrationService<FrameworkEnv
         if (brev == null)
             throw MESSAGES.illegalArgumentNull("brev");
 
-        LockContext lockContext = null;
+        LockContext lockContext = lockResources(Method.UNINSTALL, brev);
         try {
-            lockContext = lockResources(Method.UNINSTALL, brev);
             injectedEnvironment.getValue().uninstallResources(brev);
         } finally {
             unlockResources(lockContext);

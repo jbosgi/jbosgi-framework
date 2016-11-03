@@ -545,10 +545,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void resolveBundle(XBundle bundle) throws ResolutionException {
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
+        LockableItem[] items = getLockableItems(lockManager, Method.RESOLVE, bundle);
+        LockContext lockContext = lockManager.lockItems(Method.RESOLVE, items);
         try {
-            LockableItem[] items = getLockableItems(lockManager, Method.RESOLVE, bundle);
-            lockContext = lockManager.lockItems(Method.RESOLVE, items);
             LOGGER.debugf("Resolving bundle: %s", bundle);
             Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
             XResolver resolver = getFrameworkState().getFrameworkResolver();
@@ -569,10 +568,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
+        LockableItem[] items = getLockableItems(lockManager, Method.START, bundle);
+        LockContext lockContext =  lockManager.lockItems(Method.START, items);
         try {
-            LockableItem[] items = getLockableItems(lockManager, Method.START, bundle);
-            lockContext = lockManager.lockItems(Method.START, items);
             AbstractBundleState.assertBundleState(bundle).startInternal(options);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot start bundle: %s", bundle);
@@ -590,10 +588,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
+
+        LockableItem[] items = getLockableItems(lockManager, Method.STOP, bundle);
+        LockContext lockContext = lockManager.lockItems(Method.STOP, items);
         try {
-            LockableItem[] items = getLockableItems(lockManager, Method.STOP, bundle);
-            lockContext = lockManager.lockItems(Method.STOP, items);
             AbstractBundleState.assertBundleState(bundle).stopInternal(options);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);
@@ -606,10 +604,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void updateBundle(XBundle bundle, InputStream input) throws BundleException {
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
+        LockableItem[] items = getLockableItems(lockManager, Method.UPDATE, bundle);
+        LockContext lockContext = lockManager.lockItems(Method.UPDATE, items);
         try {
-            LockableItem[] items = getLockableItems(lockManager, Method.UPDATE, bundle);
-            lockContext = lockManager.lockItems(Method.UPDATE, items);
             AbstractBundleState.assertBundleState(bundle).updateInternal(input);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot update bundle: %s", bundle);
@@ -622,14 +619,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockContext lockContext = null;
+
+        LockableItem[] items = getLockableItems(lockManager, Method.UNINSTALL, bundle);
+        LockContext lockContext = lockManager.lockItems(Method.UNINSTALL, items);
         try {
-            LockableItem[] items = getLockableItems(lockManager, Method.UNINSTALL, bundle);
-            lockContext = lockManager.lockItems(Method.UNINSTALL, items);
-            LockContext transitiveClosureLock = null;
+            items = getTransitiveLockForUninstall(lockManager, bundle);
+            LockContext transitiveClosureLock = lockManager.lockItems(Method.UNINSTALL, items);
             try {
-                items = getTransitiveLockForUninstall(lockManager, bundle);
-                transitiveClosureLock = lockManager.lockItems(Method.UNINSTALL, items);
                 AbstractBundleState.assertBundleState(bundle).uninstallInternal(options);
             } finally {
                 lockManager.unlockItems(transitiveClosureLock);
